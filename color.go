@@ -14,8 +14,9 @@ func IATC(IA []int) (string) {
 }
 
 func main(){
+
 	var (
-	CharBuff []byte
+		CharBuff []byte
 		red = RGB(255, 0, 0)
 		green = RGB(0, 255, 0)
 		blue = RGB(0, 0, 255)
