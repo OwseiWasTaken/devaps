@@ -4,8 +4,7 @@ include "gutil"
 include "./devaps/abspath"
 
 
-type conv struct {
-	place string
+type conv struct { place string
 	replace string
 	color string
 }
@@ -46,6 +45,7 @@ func main() {
 
 	for i=0;i<len(file);i++ {
 		line = strings.Split(file[i], " ")
+		line[0] = strings.Replace(line[0], "\t", "", -1)
 		if len(line) == 1 {continue}
 		if len(line) == 0 {continue}
 		if (line[0][0] == '#'){continue}
