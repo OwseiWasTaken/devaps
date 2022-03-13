@@ -9,14 +9,39 @@ func CompareBytes(ba1, ba2 []byte) (bool) {
 	return true
 }
 
+func Compress( x []byte ) ( string ) {
+	var buff = ""
+	for i:=0;i!=6;i++{
+		buff+=spf("%.3d,", x[i])
+	}
+	return buff
+}
+
+
 func main(){
 	InitGu()
 	InitGetCh()
-	_ = CompareBytes([]byte{0}, []byte{1})
-	var BA = make( []byte , 6)
-	for {
-		printf("%v\n", GetChBA(&BA))
-		BA = make( []byte , 6)
+	clear()
+	var limit = -1 // < 0 = infinity
+	var err error
+
+	if get("--once").Exists {
+		limit = 1
+	}
+	if get("--limit").Exists {
+		if len(get("--limit").List) > 1 {
+			PS(get("--limit").List)
+			limit, err = strconv.Atoi(get("--limit").List[1])
+			panic(err)
+		} else {
+			fprintf(stderr, "--limit needs a value! ($gtk --limit 32)\n")
+		}
+	}
+
+	for i:=0;i!=limit;i++{
+		x:=GetChByte()
+		printf("%v\n", x)
+		printf("%v\n", Compress(x))
 	}
 	exit(0)
 }
