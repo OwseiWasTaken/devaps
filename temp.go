@@ -13,6 +13,7 @@ type temp struct {
 	value float64
 	togo int
 	from int
+	FromV float64
 }
 
 func KtoC (i float64) (float64) {
@@ -35,14 +36,14 @@ func CtoK (i float64) (float64) {
 	return i - 273.15
 }
 
-func dPrintTemp (i temp) () {
+func dprinttemp (i temp) () {
 	printf("value: %f\n", i.value)
 	printf("needs to be: %s\n", NtN(i.togo))
 	printf("came from: %s\n\n", NtN(i.from))
 }
 
 func PrintTemp	( i temp ) () {
-	printf("  %.3f%s\n", i.value, NtN(i.togo))
+	printf("  %.3f%s->%.3f%s\n", i.FromV, NtN(i.from), i.value, NtN(i.togo))
 }
 
 func NtN (i int) (string) {
@@ -52,17 +53,18 @@ func NtN (i int) (string) {
 func main(){
 	InitGu()
 
-	var current int
 	var stuff = map[int][]temp{
 		C:[]temp{},
 		K:[]temp{},
 		F:[]temp{},
 	}
-	var now int
-	var v float64
 	var err error
-	var a string
-	var t temp
+	var current int // current togo temp
+	var ov float64 // temp.FromV
+	var v float64 // temp.value
+	var a string // current arg
+	var now int // current temp type (C, K, F)
+	var t temp // temp
 
 	for i := 0 ; i < argc ; i++ {
 		a = argv[i]
@@ -76,6 +78,7 @@ func main(){
 			current = C
 		default:
 			v, err = strconv.ParseFloat(argv[i][:len(argv[i])-1], 64)
+			ov = v
 			panic(err)
 			switch (argv[i][len(argv[i])-1]) {
 			case 'c', 'C':
@@ -88,17 +91,17 @@ func main(){
 				v = FtoC(v)
 				now = F
 			}
-			stuff[current] = append(stuff[current], temp{v, current, now})
+			stuff[current] = append(stuff[current], temp{v, current, now, ov})
 		}
 	}
 	w := RGB(255,255,255)
 	for n:=range stuff {
 		if (n) == C {
-			printf("==%sCelsius%s=={\n", RGB(255, 0, 255), w)
+			printf("==%sCelsius%s==:\n", RGB(255, 0, 255), w)
 		} else if (n) == K {
-			printf("\n==%sKelvin%s=={\n", RGB(0, 255, 255), w)
+			printf("\n==%sKelvin%s==:\n", RGB(0, 255, 255), w)
 		} else if (n) == F {
-			printf("\n==%sFahrenheit%s=={\n", RGB(0, 0, 255), w)
+			printf("\n==%sFahrenheit%s==:\n", RGB(0, 0, 255), w)
 		}
 		for i:=0;i<len(stuff[n]);i++ {
 			t = stuff[n][i]
@@ -112,7 +115,6 @@ func main(){
 			}
 			PrintTemp(t)
 		}
-		print("}\n")
 	}
 
 	exit(0)
