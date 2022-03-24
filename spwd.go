@@ -30,15 +30,15 @@ func main() {
 	panic(err)
 	flname = cfgfl.String()
 
-	if !exists(flname+"/.config/_pwd.xmp") {
+	if !exists(flname+"/.config/spwd.xmp") {
 		if !exists(flname+"/.config") {
 			dprint(stderr, "ERROR", "can't find %s/.config folder!", flname)
 			exit(2)
 		}
-		WriteFile(flname+"/.config/_pwd.xmp", "\n")
+		WriteFile(flname+"/.config/spwd.xmp", "\n")
 	}
 
-	cfgfl, err = ExpandFrom(flname+"/.config/_pwd.xmp")
+	cfgfl, err = ExpandFrom(flname+"/.config/spwd.xmp")
 	flname = cfgfl.String()
 
 	file = strings.Split(ReadFile(flname), "\n") // not really a .xmp file
