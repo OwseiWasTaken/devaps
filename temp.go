@@ -41,7 +41,7 @@ func dPrintTemp (i temp) () {
 	printf("came from: %s\n\n", NtN(i.from))
 }
 
-func PrintTemp  ( i temp ) () {
+func PrintTemp	( i temp ) () {
 	printf("  %.3f%s\n", i.value, NtN(i.togo))
 }
 
