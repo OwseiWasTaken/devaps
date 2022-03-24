@@ -1,5 +1,9 @@
 package main
 
+// don't use this!
+// it's not well made
+// and it's not working
+
 include "gutil"
 include "pager"
 include "lister"
@@ -20,9 +24,24 @@ func ShowFile (flname string) () {
 }
 
 func main(){
-	InitGu()
+	//InitGu()
+	_clear = make(map[string]func()) //Initialize funcs map
+	_clear["linux"] = func() {
+		cmd := exec.Command("/usr/bin/clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	_clear["windows"] = func() {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
 
 	fls = get("").List
+	if len(fls) == 0 {
+		fls = []string{"."}
+	}
+
 	for i:=0;i<len(fls);i++ {
 		fl = fls[i]
 		fli, err = os.Stat(fl)

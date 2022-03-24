@@ -38,32 +38,52 @@ var (
 	lgrey = RGB(180, 180, 180)
 	white = RGB(255, 255, 255)
 	__fl string
+	txs string
 )
 
 func PFS ( f []string, off int ) () {
-	clear()
+	//clear()
+	pos(0, 0)
 	printf("%s───────┬", grey) // ,8
-	print(strings.Repeat("─", termx - 8)+"\n") // ,0
-	printf("%s       │%s File: %s\n", grey, white, __fl)
+	print(txs+"\n") // ,0
+	printf(  " File: │ %s%s\n", white, __fl)
 	printf("%s───────┼", grey) // ,8
-	print(strings.Repeat("─", termx - 8)+"\n") // ,0
+	print(txs+"\n") // ,0
 
+	printf("\x1b[%d;0H", 3+1+1)
 	for i:=0;i<len(f);i++{
 		if running && i+1 == len(f){
 			break
 		}
-		printf("%s%s%d%s │%s %s\n",
+
+		// clear
+		stdout.WriteString("\x1b[K")
+		stdout.WriteString(
+		spf("%s%s%d%s │%s %s%s",
 			strings.Repeat(" ", 6-(len(spf("%d", i+1+off)))),
 			lgrey,
 			i+1+off,
 			grey,
 			white,
 			f[i],
-		)
+			spf("\x1b[%d;0H", i+3+1+1),
+		))
+		//printf("%s%s%d%s │%s %s\n",
+		//	strings.Repeat(" ", 6-(len(spf("%d", i+1+off)))),
+		//	lgrey,
+		//	i+1+off,
+		//	grey,
+		//	white,
+		//	f[i],
+		//)
 	}
-	printf("%s───────┴", grey) // ,8
-	print(strings.Repeat("─", termx - 8)+"\n") // ,0
-	print(white)
+	stdout.WriteString("\n")
+	stdout.Flush()
+	stdout.WriteString(grey+"───────┴") // ,8
+	stdout.WriteString(txs+"\n") // ,0
+	stdout.WriteString(white)
+	stdout.Flush()
+
 }
 
 func PrintFile ( f []string, offset int ) () {
@@ -85,6 +105,13 @@ func Pagefile ( flname string ) () {
 		InitGetCh()
 	}
 
+
+	txs = strings.Repeat("─", termx - 8)
+	printf("%s───────┬", grey) // ,8
+	print(txs+"\n") // ,0
+	printf("%s		 │%s File: %s\n", grey, white, __fl)
+	printf("%s───────┼", grey) // ,8
+	print(txs+"\n") // ,0
 	PrintFile(PgFl, 0)
 
 	for ;running;{
