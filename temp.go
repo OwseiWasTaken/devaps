@@ -39,7 +39,8 @@ func CtoK (i float64) (float64) {
 func dprinttemp (i temp) () {
 	printf("value: %f\n", i.value)
 	printf("needs to be: %s\n", NtN(i.togo))
-	printf("came from: %s\n\n", NtN(i.from))
+	printf("came from: %s\n", NtN(i.from))
+	printf("came from V: %d\n\n", i.FromV)
 }
 
 func PrintTemp	( i temp ) () {
