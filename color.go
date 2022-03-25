@@ -38,9 +38,9 @@ func main(){
 		DecId = func() () {
 			ColorId = (ColorId+2)%3
 		}
-
 		IncCol = func() () { cla[ColorId] = ( cla[ColorId]+1 ) }
 		DecCol = func() () { cla[ColorId] = (cla[ColorId]+255) }
+		oz []int
 	)
 
 	InitGu()
@@ -70,6 +70,7 @@ func main(){
 		RGB(cla[0], cla[1], cla[2]), COLOR["nc"],
 	)
 	HideCursor()
+	oz = []int{0, 0, 0}
 	for {
 		CharBuff = make([]byte, 5)
 		CharBuff = GetChByte()
@@ -82,15 +83,17 @@ func main(){
 		pos(0, 0)
 
 		for i:=0;i<3;i++{
-			if (i == ColorId) {
-				printf("%s%s%s:%d ",
-					IdToColor[i], IdToColorS[i], COLOR["nc"], cla[i],
+			oz[i] = int(cla[i])
+			if ( i == ColorId ) {
+				printf("%s\x1b[48;2;255;255;255m%s\x1b[48;2;0;0;0m%s:%d ",
+					IATC(oz), IdToColorS[i], COLOR["nc"], cla[i],
 				)
 			} else {
-				printf("%s:%d ",
-					IdToColorS[i], cla[i],
+				printf("%s%s%s:%d ",
+					IATC(oz), IdToColorS[i], COLOR["nc"], cla[i],
 				)
 			}
+			oz[i] = 0
 		}
 
 		printf("\n%s█████ █████\nLorem Ipsum%s\n",
