@@ -50,7 +50,7 @@ func main(){
 		}
 
 		if ((47 < a[0] && a[0] < 58)) { // 0..9
-			label = spf("timer %d", i) // default label
+			label = spf("timer %d", len(timers)+1) // default label
 
 			// has a label
 			if strings.Contains(a, ":") {
@@ -85,5 +85,4 @@ func main(){
 			r = t.run(j) || r
 		}
 	}
-
 }
