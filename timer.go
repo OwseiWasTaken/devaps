@@ -98,6 +98,5 @@ func main(){
 			}
 		}
 	}
-	pos(len(timers), 0)
 	exit(0)
 }
