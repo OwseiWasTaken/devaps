@@ -17,14 +17,14 @@ func main(){
 
 	var (
 		CharBuff []byte
-		red = RGB(255, 0, 0)
-		green = RGB(0, 255, 0)
-		blue = RGB(0, 0, 255)
-		IdToColor = map[int]string{
-			0:red,
-			1:green,
-			2:blue,
-		}
+		//red = RGB(255, 0, 0)
+		//green = RGB(0, 255, 0)
+		//blue = RGB(0, 0, 255)
+		//IdToColor = map[int]string{
+		//	0:red,
+		//	1:green,
+		//	2:blue,
+		//}
 		IdToColorS = map[int]string{
 			0:"red",
 			1:"green",
@@ -54,32 +54,27 @@ func main(){
 		enter = []byte{10, 0, 0, 0, 0}
 	)
 
-	pos(0, 0)
-	for i:=0;i<3;i++{
-		if (i == ColorId) {
-			printf("%s%s%s:%d ",
-				IdToColor[i], IdToColorS[i], COLOR["nc"], cla[i],
-			)
-		} else {
-			printf("%s:%d ",
-				IdToColorS[i], cla[i],
-			)
-		}
-	}
-	printf("\n%s█████ █████\nLorem Ipsum%s\n",
-		RGB(cla[0], cla[1], cla[2]), COLOR["nc"],
-	)
+	//pos(0, 0)
+	//printf("%s\x1b[48;2;255;255;255m%s\x1b[48;2;0;0;0m%s:%d ",
+	//	IATC(oz), IdToColorS[i], COLOR["nc"], cla[i],
+	//)
+	//for i:=0;i<3;i++{
+	//	if (i == ColorId) {
+	//		printf("%s%s%s:%d ",
+	//			IdToColor[i], IdToColorS[i], COLOR["nc"], cla[i],
+	//		)
+	//	} else {
+	//		printf("%s:%d ",
+	//			IdToColorS[i], cla[i],
+	//		)
+	//	}
+	//}
+	//printf("\n%s█████ █████\nLorem Ipsum%s\n",
+	//	RGB(cla[0], cla[1], cla[2]), COLOR["nc"],
+	//)
 	HideCursor()
 	oz = []int{0, 0, 0}
 	for {
-		CharBuff = make([]byte, 5)
-		CharBuff = GetChByte()
-		clear()
-		if (CompareBytes(up, CharBuff)) {IncCol()} else
-		if (CompareBytes(down, CharBuff)) {DecCol()} else
-		if (CompareBytes(right, CharBuff)) {IncId()} else
-		if (CompareBytes(left, CharBuff)) {DecId()} else
-		if (CompareBytes(enter, CharBuff)) {break}
 		pos(0, 0)
 
 		for i:=0;i<3;i++{
@@ -99,6 +94,14 @@ func main(){
 		printf("\n%s█████ █████\nLorem Ipsum%s\n",
 			RGB(cla[0], cla[1], cla[2]), COLOR["nc"],
 		)
+		CharBuff = make([]byte, 5)
+		CharBuff = GetChByte()
+		clear()
+		if (CompareBytes(up, CharBuff)) {IncCol()} else
+		if (CompareBytes(down, CharBuff)) {DecCol()} else
+		if (CompareBytes(right, CharBuff)) {IncId()} else
+		if (CompareBytes(left, CharBuff)) {DecId()} else
+		if (CompareBytes(enter, CharBuff)) {break}
 	}
 	ShowCursor()
 	printf("gcall: RGB(%d, %d, %d)\n", cla[0], cla[1], cla[2])
