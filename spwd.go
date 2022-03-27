@@ -1,7 +1,7 @@
 package main
 
 include "gutil"
-include "./devaps/abspath"
+include "abspath"
 
 
 type conv struct { place string
