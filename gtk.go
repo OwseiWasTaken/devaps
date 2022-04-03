@@ -10,8 +10,9 @@ func CompareBytes(ba1, ba2 []byte) (bool) {
 }
 
 func Compress( x []byte ) ( string ) {
-	var buff = ""
+	buff := ""
 	for i:=0;i!=6;i++{
+		if (x[i] == 0) { break }
 		buff+=spf("%.3d,", x[i])
 	}
 	return buff
