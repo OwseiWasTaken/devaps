@@ -5,10 +5,11 @@ include "gutil"
 // flag index
 const (
 	Clean = iota
-	Utracked
-	uncommited
-	restore
-	FlagLen
+	Utracked = iota
+	uncommited = iota
+	unpulled = iota
+	restore = iota
+	FlagLen = iota
 )
 
 
@@ -18,15 +19,15 @@ var (
 		"working tree clean",
 		"Untracked files",
 		"Changes to be committed",
-		"git restore",
-		"FLAG LEN",
+		"behind",
+		"Changes not staged for commit",
 	}
 	FlagIcons = []string{
 		"✓",
 		"+",
 		"↑",
-		"",//TODO find monospace pencil
-		"!",
+		"↓",
+		"🖉", // i monospace goes brrr
 	}
 	flags = make([]bool, FlagLen)
 )
@@ -35,15 +36,38 @@ func main () {
 	InitGu()
 	var (
 		GSOut string
-		flags []bool
+		GD bool // git directory
   )
 
-	GSOut, err := exec.Command("git", "status").Output()
+	Out, err := exec.Command("git", "status").Output()
+	GSOut = string(Out)
 	panic(err)
 
-	for (i:=0;i<FlagLen;i++) {
+	for i:=0;i<FlagLen;i++ {
+		// PS(FlagTexts[i])
+		// PS(strings.Contains(GSOut, FlagTexts[i]))
+		// print("\n")
 		flags[i] = strings.Contains(GSOut, FlagTexts[i])
+		GD = GD || flags[i]
 	}
-	//TODO print flags' icons
+
+	if GD {
+		printf("(")
+		if flags[0] {
+			printf(RGB(60, 255, 60))
+		} else if flags[3] {
+			printf(RGB(60, 60, 255))
+		} else {
+			printf(RGB(255, 60, 60))
+		}
+		for i:=0;i<FlagLen;i++ {
+			if flags[i] {
+				printf(FlagIcons[i])
+			}
+		}
+		printf(RGB(255, 255, 255))
+		printf(")")
+	}
+
 	exit(0)
 }
