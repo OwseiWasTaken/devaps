@@ -7,6 +7,7 @@ const (
 	Clean = iota
 	Utracked = iota
 	uncommited = iota
+	unpushed = iota
 	unpulled = iota
 	restore = iota
 	FlagLen = iota
@@ -19,12 +20,14 @@ var (
 		"working tree clean",
 		"Untracked files",
 		"Changes to be committed",
+		"mfeoafm3",
 		"behind",
 		"Changes not staged for commit",
 	}
 	FlagIcons = []string{
 		"✓",
 		"+",
+		"→",
 		"↑",
 		"↓",
 		"🖉", // i monospace goes brrr
