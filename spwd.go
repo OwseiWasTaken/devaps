@@ -72,8 +72,7 @@ func main() {
 		pwd = strings.Replace(pwd, stuff[i].place, stuff[i].replace, 1)
 	}
 
-	fprintf(stdout, color+pwd)
-	stdout.Flush()
+	printf(color+pwd+RGB(255,255,255))
 
 	exit(0)
 }
