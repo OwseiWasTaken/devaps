@@ -72,6 +72,7 @@ func main() {
 		pwd = strings.Replace(pwd, stuff[i].place, stuff[i].replace, 1)
 	}
 
+	pwd = strings.Replace(pwd, "\n", "", -1)
 	printf(color+pwd+RGB(255,255,255))
 
 	exit(0)
