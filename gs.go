@@ -20,7 +20,7 @@ var (
 		"working tree clean",
 		"Untracked files",
 		"Changes to be committed",
-		"mfeoafm3",
+		"Your branch is ahead",
 		"behind",
 		"Changes not staged for commit",
 	}
