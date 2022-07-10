@@ -50,7 +50,7 @@ func main() {
 		if len(line) == 0 {continue}
 		if (line[0][0] == '#'){continue}
 		if len(line) == 2 {
-			color = RGB(30, 30, 240)
+			color = RGB(255, 255, 255)
 		} else {
 			color = line[2]
 			cl = strings.Split(color, ",")
