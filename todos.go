@@ -160,9 +160,6 @@ func DoFile ( filename string ) {
 	} else {
 		printf("%s: %sno TODOs%s\n", filename, RGB(0,255,0),RGB(255,255,255))
 	}
-	//TODO(3): name
-	//TODO(1) name: desc
-	//TODO(3) name
 
 }
 
@@ -170,6 +167,8 @@ func main(){
 	if argc == 0 {
 		exit(1)
 	}
+	//TODO(1): sort by rank
+	//TODO(2) read .txt: .txt = list of files to DoFile()
 	for i:=0;i<argc;i++{
 		DoFile(argv[i])
 	}
