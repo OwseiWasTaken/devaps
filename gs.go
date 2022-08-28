@@ -39,10 +39,17 @@ func main () {
 	InitGu()
 	var (
 		GSOut string
+		branch string
   )
 
 	Out, err := exec.Command("git", "status").Output()
 	GSOut = string(Out)
+	branch = strings.Split(GSOut, "\n")[0]
+	branch = strings.Join(strings.Split(branch, " ")[2:], " ")
+
+	if branch != "master" && branch != "main" {
+		printf(branch)
+	}
 
 	// not git directory
 	if err != nil{
@@ -55,6 +62,7 @@ func main () {
 		// print("\n")
 		flags[i] = strings.Contains(GSOut, FlagTexts[i])
 	}
+
 
 	GSOut = "("
 	if flags[0] {
