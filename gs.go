@@ -43,17 +43,18 @@ func main () {
   )
 
 	Out, err := exec.Command("git", "status").Output()
+
+	// not git directory
+	if err != nil{
+		exit(0)
+	}
+
 	GSOut = string(Out)
 	branch = strings.Split(GSOut, "\n")[0]
 	branch = strings.Join(strings.Split(branch, " ")[2:], " ")
 
 	if branch != "master" && branch != "main" {
 		printf(branch+" ")
-	}
-
-	// not git directory
-	if err != nil{
-		exit(0)
 	}
 
 	for i:=0;i<FlagLen;i++ {
