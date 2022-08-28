@@ -48,7 +48,7 @@ func main () {
 	branch = strings.Join(strings.Split(branch, " ")[2:], " ")
 
 	if branch != "master" && branch != "main" {
-		printf(branch)
+		printf(branch+" ")
 	}
 
 	// not git directory
