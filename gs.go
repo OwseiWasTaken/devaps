@@ -53,19 +53,17 @@ func main () {
 	branch = strings.Split(GSOut, "\n")[0]
 	branch = strings.Join(strings.Split(branch, " ")[2:], " ")
 
-	if branch != "master" && branch != "main" {
-		printf(branch+" ")
-	}
-
 	for i:=0;i<FlagLen;i++ {
-		// PS(FlagTexts[i])
-		// PS(strings.Contains(GSOut, FlagTexts[i]))
-		// print("\n")
 		flags[i] = strings.Contains(GSOut, FlagTexts[i])
 	}
 
 
-	GSOut = "("
+	if branch != "master" && branch != "main" {
+		GSOut = "("+branch+" "
+	} else {
+		GSOut = "("
+	}
+
 	if flags[0] {
 		GSOut += RGB(60, 255, 60)
 	} else if flags[3] {
@@ -81,7 +79,6 @@ func main () {
 	}
 
 	GSOut += RGB(255, 255, 255) + ")"
-	GSOut = strings.Replace(GSOut, " ", "", -1)
 	printf(GSOut)
 
 	exit(0)
