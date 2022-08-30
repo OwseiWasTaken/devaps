@@ -2,6 +2,10 @@ package main
 
 include "gutil"
 
+import (
+	"sort"
+)
+
 const DEFAULTRANK = 8
 
 var (
@@ -152,24 +156,62 @@ func DoFile ( filename string ) {
 		})
 	}
 
+
+
 	if len(TODOS) != 0 {
+		sort.Slice(TODOS, func(i, j int) bool {
+			return TODOS[i].rank < TODOS[j].rank
+		})
 		PS(filename+":")
 		for i:=0;i<len(TODOS);i++ {
 			PS(TODOS[i].str())
 		}
 	} else {
-		printf("%s: %sno TODOs%s\n", filename, RGB(0,255,0),RGB(255,255,255))
+		if ShowNoTodo {
+			printf("%s: %sno TODOs%s\n", filename, RGB(0,255,0),RGB(255,255,255))
+		}
 	}
 
+}
+
+var (
+	ShowNoTodo = false
+	fl []string
+	t string
+)
+
+func GetFiles ( filename string ) ([]string) {
+	return strings.Split(ReadFile(filename), "\n")
 }
 
 func main(){
 	if argc == 0 {
 		exit(1)
 	}
-	//TODO(1): sort by rank
-	//TODO(2) read .txt: .txt = list of files to DoFile()
+
+	sort.Slice(argv, func(i, j int) bool {
+		return argv[i][0] == '-'
+		return j==0
+	})
+
 	for i:=0;i<argc;i++{
-		DoFile(argv[i])
+		if argv[i][0] == '-' {
+			if (argv[i] == "-snt") || (argv[i] == "--snt") {
+				ShowNoTodo = true
+			}
+		} else {
+			if argv[i][len(argv[i])-3:] == "txt" {
+				fl = GetFiles(argv[i])
+				for i:=0;i<len(fl);i++ {
+					t = fl[i]
+					// remove path
+					t = strings.Split(t, "/")[len(strings.Split(t, "/"))-1]
+					DoFile(t)
+				}
+			} else {
+				DoFile(argv[i])
+			}
+		}
 	}
 }
+
