@@ -199,6 +199,27 @@ func main(){
 		SymbolToE[E.symbol] = E
 		mlist = append(mlist, E.mass)
 	}
+	var a string
+	var t int
+	var e error
+
+	for i:=0;i<argc;i++{
+		a = argv[i]
+		if a[len(a)-1] == 'm' {
+			t, e = strconv.Atoi(a[:len(a)-1])
+			panic(e)
+			E = FindClosetsMass(float64(t))
+			//mass
+		} else {
+			t, e = strconv.Atoi(a)
+			if e == nil {
+				E = elements[t]
+			} else {
+				E = FindClosetsName(a)
+			}
+		}
+		PS(E)
+	}
 
 
 	exit(0)
