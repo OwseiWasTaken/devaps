@@ -186,8 +186,14 @@ func GetFiles ( filename string ) ([]string) {
 
 func main(){
 	if argc == 0 {
-		exit(1)
+		if exists("todos.txt") {
+			argv = []string{"todos.txt"}
+			argc = 1
+		} else {
+			exit(1)
+		}
 	}
+	//TODO(3) test: test
 
 	sort.Slice(argv, func(i, j int) bool {
 		return argv[i][0] == '-'
