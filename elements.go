@@ -125,6 +125,7 @@ func (e El) display() (string) {
 	)
 }
 
+//TODO: review (and fix) e.fam
 var elements = []El{}
 func main(){
 	InitGu()
