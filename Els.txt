@@ -5,6 +5,7 @@
 #group
 #atomic mass
 #any number of names
+0,0,-99,-999.9,ER,ERROR
 
 1,1,1,1.0079,H,Hidrogenio,Hydrogen,Hidrogênio
 8,1,18,4.0026,He,Helium,Helio,Hélio
