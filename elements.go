@@ -17,7 +17,7 @@ func GetByCoors(x, y int) (El) {
 			return elements[i]
 		}
 	}
-	return elements[0]
+	return El{0, 0, 0, -99, -999.9, []string{"ER", "ERROR"}}
 }
 
 func FindClosetsMass (target float64) (El) {
@@ -37,7 +37,7 @@ func FindClosetsMass (target float64) (El) {
 			index = i
 		}
 	}
-	return elements[index+1]
+	return elements[index]
 }
 
 const (
@@ -45,17 +45,9 @@ const (
 	wrongdiff = 4
 )
 
-func GetFam(ins string) ([]El) {
-	// (Family & 0b1000) >> 3
-	// 0b[b]111+1 = [b]8
-	// &0b1000 == 0 b = false
-	in, err := strconv.Atoi(ins[1:])
-	if ins[0] == 'b' || ins[0] == 'B' {
-		in+=8
-	}
-	panic(err)
+func GetFam(in int) ([]El) {
 	var ret = []El{}
-	for i:=1;i<len(elements);i++ {
+	for i:=0;i<len(elements);i++ {
 		if elements[i].fam == in {
 			ret = append(ret, elements[i])
 		}
@@ -120,8 +112,8 @@ func (e El) display() (string) {
 		ns+=", "+e.srs[i]
 	}
 	return spf(
-		"%s (%d,%d) Z=%d M=%f \"%s\"",
-		e.srs[0], e.x, e.y, e.Z, e.mass, ns[2:],
+		"%s Z=%d M=%f \"%s\" (%d,%d)",
+		e.srs[0], e.Z, e.mass, ns[2:], e.x, e.y,
 	)
 }
 
@@ -147,13 +139,13 @@ func main(){
 
 		tint, terror = strconv.Atoi(line[0])
 		panic(terror)
-		E.x = tint
+		E.fam = tint
 		tint, terror = strconv.Atoi(line[1])
 		panic(terror)
-		E.y = tint
+		E.x = tint
 		tint, terror = strconv.Atoi(line[2])
 		panic(terror)
-		E.fam = tint
+		E.y = tint
 		f, terror = strconv.ParseFloat(line[3], 32)
 		panic(terror)
 		E.mass = f
@@ -178,8 +170,22 @@ func main(){
 		a = argv[i]
 		if (a[0] == 'a' || a[0] == 'A' || a[0] == 'b' || a[0] == 'B') {
 			//TODO: define E
-			scope = GetFam(a)
-			PS(scope)
+			t, e = strconv.Atoi(a[1:])
+			panic(e)
+			if a[0]=='b' || a[0]=='B' {
+				t*=-1
+			}
+			scope = GetFam(t)
+			if argc > 1 {
+				PS(spf("=== %s", a))
+			}
+			for i:=0;i<len(scope);i++{
+				PS(scope[i].display())
+			}
+			if argc > 1 {
+				PS(spf("=== %s", a))
+			}
+			continue
 		} else if strings.Index(a, ",")!=-1 {
 			ts = strings.Split(a, ",")
 			t, e = strconv.Atoi(ts[0])
@@ -188,9 +194,10 @@ func main(){
 			panic(e)
 			E = GetByCoors(t, t2)
 		} else if a[len(a)-1] == 'm' {
-			t, e = strconv.Atoi(a[:len(a)-1])
+			f, e = strconv.ParseFloat(a[:len(a)-1], 32)
+			//t, e = strconv.Atoi(a[:len(a)-1])
 			panic(e)
-			E = FindClosetsMass(float64(t))
+			E = FindClosetsMass(f)
 			//mass
 		} else {
 			t, e = strconv.Atoi(a)
