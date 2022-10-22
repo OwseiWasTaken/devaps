@@ -15,6 +15,8 @@ var (
 		"c"  :"//",
 		"cpp":"//",
 		"ino":"//",
+		// owseiwastaken/dt
+		"clrs":"#",
 	}
 	rankcolor = map[int]string {
 		1:RGB(255,0,0),
