@@ -25,10 +25,12 @@ func main(){
 	clear()
 	var limit = -1 // < 0 = infinity
 	var err error
+	var python bool // python tuple formatting
 
 	if get("--once").Exists {
 		limit = 1
 	}
+	python = get("--python").Exists
 	if get("--limit").Exists {
 		if len(get("--limit").List) > 1 {
 			PS(get("--limit").List)
@@ -39,8 +41,12 @@ func main(){
 		}
 	}
 
+	if python {
+		printf("(%v)\n", Compress(GetChByte(stdin)))
+		exit(0)
+	}
 	for i:=0;i!=limit;i++{
-		x:=GetChByte()
+		x:=GetChByte(stdin)
 		printf("%v\n", x)
 		printf("%v\n", Compress(x))
 	}
