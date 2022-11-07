@@ -42,7 +42,9 @@ func main(){
 	}
 
 	if python {
-		printf("(%v)\n", Compress(GetChByte(stdin)))
+		for i:=0;i!=limit;i++{
+			printf("(%v)\n", Compress(GetChByte(stdin)))
+		}
 		exit(0)
 	}
 	for i:=0;i!=limit;i++{
