@@ -164,9 +164,9 @@ func DoFile ( filename string ) {
 		sort.Slice(TODOS, func(i, j int) bool {
 			return TODOS[i].rank < TODOS[j].rank
 		})
-		PS(filename+":")
+		printf(filename+":\n")
 		for i:=0;i<len(TODOS);i++ {
-			PS(TODOS[i].str())
+			printf(TODOS[i].str()+"\n")
 		}
 	} else {
 		if ShowNoTodo {
@@ -188,8 +188,9 @@ func GetFiles ( filename string ) ([]string) {
 
 func main(){
 	if argc == 0 {
-		if exists("todos.txt") {
-			argv = []string{"todos.txt"}
+		if exists("./todos.txt") {
+			PS("Using ./todos.txt")
+			argv = []string{"./todos.txt"}
 			argc = 1
 		} else {
 			exit(1)
@@ -208,16 +209,18 @@ func main(){
 				ShowNoTodo = true
 			}
 		} else {
-			if argv[i][len(argv[i])-3:] == "txt" {
-				fl = GetFiles(argv[i])
-				for i:=0;i<len(fl);i++ {
-					t = fl[i]
-					// remove path
-					t = strings.Split(t, "/")[len(strings.Split(t, "/"))-1]
-					DoFile(t)
+			if len(argv[i]) > 3 {
+				if argv[i][len(argv[i])-3:] == "txt" {
+					fl = GetFiles(argv[i])
+					for i:=0;i<len(fl);i++ {
+						t = fl[i]
+						// remove path
+						t = strings.Split(t, "/")[len(strings.Split(t, "/"))-1]
+						DoFile(t)
+					}
+				} else {
+					DoFile(argv[i])
 				}
-			} else {
-				DoFile(argv[i])
 			}
 		}
 	}
