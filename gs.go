@@ -25,7 +25,7 @@ var (
 		"Changes not staged for commit",
 	}
 	FlagIcons = []string{
-		"✓",
+		"ü",
 		"+",
 		"→",
 		"↑",
