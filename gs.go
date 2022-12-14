@@ -58,11 +58,14 @@ func main () {
 	}
 
 
-	if branch != "master" && branch != "main" {
-		GSOut = "("+branch+" "
-	} else {
-		GSOut = "("
-	}
+	// always print branch
+	GSOut = "("+branch+" "
+	// print branch is not default
+	//if branch != "master" && branch != "main" {
+	//	GSOut = "("+branch+" "
+	//} else {
+	//	GSOut = "("
+	//}
 
 	if flags[0] {
 		GSOut += RGB(60, 255, 60)
