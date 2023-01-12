@@ -59,7 +59,7 @@ func main () {
 
 
 	// always print branch
-	GSOut = "("+branch+" "
+	GSOut = RGB(255, 60, 180)+branch+" "
 	// print branch is not default
 	//if branch != "master" && branch != "main" {
 	//	GSOut = "("+branch+" "
@@ -81,7 +81,7 @@ func main () {
 		}
 	}
 
-	GSOut += RGB(255, 255, 255) + ")"
+	GSOut += RGB(255, 255, 255)
 	printf(GSOut)
 
 	exit(0)
