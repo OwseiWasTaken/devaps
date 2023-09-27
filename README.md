@@ -13,9 +13,14 @@ usage: todos src/*.go
 //TODO(3) test: desc // will create a TODO with 3° severity, named "test" with the description "desc"
 //TODO test: desc // will create a TODO with 8° (default) severity, named "test" with the descrition "desc"
 //TODO: desc // will create a TODO with 8° (default) severity, named "desc" with no description
+
+todos.go:
+  3@203: test
+  8@204: test
+  8@205: desc
 ```
 
-##### however, todos.go doesn't print descriptions
+however, todos.go doesn't print descriptions _yet_
 
 <!-- TODO: remake timer.go (maybe in c) so it doesn't use gc.py -->
 ## timer.go
