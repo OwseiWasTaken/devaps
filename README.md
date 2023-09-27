@@ -6,10 +6,10 @@
 ## timer.go
 timer scheduler in go
 
-usage: timer timers[:label] [label]
-adding a label with ':' or as an argument means the same
-however with ':' the label can be a number
-the labes added without ':' can be concatenated to the last defined timer
+usage: timer timers[:label] [label]<br>
+adding a label with ':' or as an argument means the same.<br>
+however with ':' the label can be a number.<br>
+the labes added without ':' can be concatenated to the last defined timer.<br>
 ```shell
 $ timer 10 hi
 timer 1 hi: 10.0 seconds left
