@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include <assert.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <assert.h>
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -46,13 +47,44 @@ if the modtime of any file changes, <command> is executed in sh\n", argv[0]);
 		// file mod guard
 		if (!stats(filev, filec, lastmods)) continue;
 
-		if (child) kill(child, SIGTERM);
+/* PROBLEM: child may create other processes/threads
+
+solution: may use ptree and sed to get children
+get ptree of child, get each process in a line, get PID from each process
+pstree -p <PID> |sed "s|-+\?-\?-|\n|g" | sed 's|[a-zAZ{} -|`]*(\([0-9]\+\))|\1|'
+
+another solution: may use /proc/ FS to manually get the children
+
+another solution: get children of /bin/sh, kill those, then sh
+*/
+
+		if (child) {
+			//printf("killing child: %d\n", child);
+			kill(child, SIGTERM);
+			child++; // (HUGE ASSUMPTION) child process executing <cmd> will be the next process
+			//printf("killing child: %d\n", child);
+			int killed = kill(child, SIGTERM);
+			if (killed < 0) {
+				perror("error killing child");
+			} else {
+				//printf("SIGQUIT sent to child\n");
+			}
+			//printf("waiting child to die\n");
+			int status;
+			int awaited = waitpid(child, &status, 0);
+			if (awaited < 0 && errno != 10) { // errno10 = children is already dead
+				perror("error awaiting child");
+			} else {
+				//printf("sig: %d, exit:%d\n", WIFEXITED(status), WIFSIGNALED(status));
+			}
+			//printf("w(%d) = %d\n", child, awaited);
+		}
 
 		child = fork();
 		assert(child >= 0);
 
 		// is child guard
-		if (child) continue;
+		if (child) continue; // await termination
 
 		// is child
 		execl("/bin/sh", "sh", "-c", cmd, (char*)NULL);
