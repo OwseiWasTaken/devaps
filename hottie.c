@@ -22,8 +22,8 @@ int stats(const char *filev[], int filec, long int lastmods[]) {
 }
 
 int main (const int argc, const char *argv[]) {
+	//TODO: open(argv[1]); fstat(fd)
 
-	// TODO: open(argv[1]); fstat(fd)
 	if (argc < 3) {
 		fprintf(stderr, "usage: %s <command> file[s]\n\
 if the modtime of any file changes, <command> is executed in sh\n", argv[0]);
