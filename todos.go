@@ -13,8 +13,11 @@ var (
 		"py" :"#",
 		"go" :"//",
 		"c"  :"//",
+		"h"  :"//",
 		"cpp":"//",
+		"hpp":"//",
 		"ino":"//",
+		"lua":"--",
 		// owseiwastaken/dt
 		"clrs":"#",
 	}
@@ -197,6 +200,9 @@ func main(){
 		}
 	}
 	//TODO(3) test: test
+	//TODO(3) test: desc
+	//TODO test: desc
+	//TODO: desc
 
 	sort.Slice(argv, func(i, j int) bool {
 		return argv[i][0] == '-'

@@ -2,6 +2,21 @@
 
 ## Apps for my everyday coding :)
 
+<!-- TODO: remake todos.go (maybe in c) so it doesn't use gc.py -->
+## todos.go
+TODOs finder in go
+
+<!-- it should read directories -->
+usage: todos src/*.go
+
+```go
+//TODO(3) test: desc // will create a TODO with 3° severity, named "test" with the description "desc"
+//TODO test: desc // will create a TODO with 8° (default) severity, named "test" with the descrition "desc"
+//TODO: desc // will create a TODO with 8° (default) severity, named "desc" with no description
+```
+
+##### however, todos.go doesn't print descriptions
+
 <!-- TODO: remake timer.go (maybe in c) so it doesn't use gc.py -->
 ## timer.go
 timer scheduler in go
