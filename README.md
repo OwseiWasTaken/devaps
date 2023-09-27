@@ -9,18 +9,26 @@ TODOs finder in go
 <!-- it should read directories -->
 usage: todos src/*.go
 
-```go
-//TODO(3) test: desc // will create a TODO with 3° severity, named "test" with the description "desc"
-//TODO test: desc // will create a TODO with 8° (default) severity, named "test" with the descrition "desc"
-//TODO: desc // will create a TODO with 8° (default) severity, named "desc" with no description
 
-todos.go:
-  3@203: test
-  8@204: test
-  8@205: desc
+```go
+file.go:
+// will create a TODO with 3° severity, named "test" with the description "desc"
+//TODO(3) test: desc
+// will create a TODO with 8° (default) severity, named "test" with the descrition "desc"
+//TODO test2: desc
+// will create a TODO with 8° (default) severity, named "desc" with no description
+//TODO: desc3
 ```
 
-however, todos.go doesn't print descriptions _yet_
+```shell
+$ todos file.go
+todos.go:
+	3@2: test
+	8@4: test2
+	8@6: desc3
+```
+
+as you can see, todos.go doesn't print descriptions _yet_
 
 <!-- TODO: remake timer.go (maybe in c) so it doesn't use gc.py -->
 ## timer.go
