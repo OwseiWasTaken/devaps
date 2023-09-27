@@ -1,5 +1,6 @@
 package main
 
+//TODO: please get rid of gc.py
 include "gutil"
 
 type timer struct {
