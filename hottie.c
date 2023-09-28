@@ -47,37 +47,16 @@ if the modtime of any file changes, <command> is executed in sh\n", argv[0]);
 		// file mod guard
 		if (!stats(filev, filec, lastmods)) continue;
 
-/* PROBLEM: child may create other processes/threads
-
-solution: may use ptree and sed to get children
-get ptree of child, get each process in a line, get PID from each process
-pstree -p <PID> |sed "s|-+\?-\?-|\n|g" | sed 's|[a-zAZ{} -|`]*(\([0-9]\+\))|\1|'
-
-another solution: may use /proc/ FS to manually get the children
-
-another solution: get children of /bin/sh, kill those, then sh
-*/
-
 		if (child) {
-			//printf("killing child: %d\n", child);
-			kill(child, SIGTERM);
-			child++; // (HUGE ASSUMPTION) child process executing <cmd> will be the next process
-			//printf("killing child: %d\n", child);
-			int killed = kill(child, SIGTERM);
-			if (killed < 0) {
-				perror("error killing child");
-			} else {
-				//printf("SIGQUIT sent to child\n");
-			}
-			//printf("waiting child to die\n");
-			int status;
-			int awaited = waitpid(child, &status, 0);
-			if (awaited < 0 && errno != 10) { // errno10 = children is already dead
-				perror("error awaiting child");
-			} else {
-				//printf("sig: %d, exit:%d\n", WIFEXITED(status), WIFSIGNALED(status));
-			}
-			//printf("w(%d) = %d\n", child, awaited);
+			// could also readdir(/proc) and fill all children of child
+			// this, however, is WAY simpler
+			char *killchildren = malloc(1024);
+			snprintf(killchildren, 1024, 
+"children=$(pstree -p %d |sed \"s|-+\\?-\\?-|\\n|g\" | sed 's|[a-zAZ{} -|`]*(\\([0-9]\\+\\))|\\1|')\n\
+for i in $children\n\
+do \n kill $i \n done"
+			, child);
+			assert(!system(killchildren));
 		}
 
 		child = fork();
