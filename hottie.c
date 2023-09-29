@@ -10,30 +10,46 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
 
 void sigignore(int signal) {}
 
 pid_t child = 0;
+int *fdv;
+int filec;
+long int *lastmods;
+void kill_child() {
+	char *killchildren = malloc(1024);
+	snprintf(killchildren, 1024,
+"children=$(pstree -p %d |sed \"s|-+\\?-\\?-|\\n|g\" | sed 's|[a-zAZ{} -|`]*(\\([0-9]\\+\\))|\\1|')\n\
+for i in $children\n\
+do \n kill $i \n done" , child);
+	assert(!system(killchildren));
+	free(killchildren);
+
+	kill(child, SIGTERM);
+	waitpid(child, NULL, 0); // must wait for child death
+}
+
 void sighandle(int signal) {
 	if (signal != SIGINT)
 		fprintf(stderr, "Killed by signal %d\n", signal);
-	if (child) {
-		char *killchildren = malloc(1024);
-		snprintf(killchildren, 1024,
-"children=$(pstree -p %d |sed \"s|-+\\?-\\?-|\\n|g\" | sed 's|[a-zAZ{} -|`]*(\\([0-9]\\+\\))|\\1|')\n\
-for i in $children\n\
-do \n kill $i \n done"
-		, child);
-		assert(!system(killchildren));
+	if (child) kill_child();
+	if (filec && fdv) {
+		for (int i = 0; i < filec; i++) {
+			close(fdv[i]);
+		}
+		free(fdv);
 	}
+	if (lastmods) free(lastmods);
 	exit(0);
 }
 
-int stats(const char *filev[], int filec, long int lastmods[]) {
+int stats(const int filev[], int filec, long int lastmods[]) {
 	struct stat statbuf;
 	int changed = 0;
 	for (int i = 0; i < filec; i++) {
-		stat(filev[i], &statbuf);
+		fstat(filev[i], &statbuf);
 		if (lastmods[i] != statbuf.st_mtim.tv_sec) {
 			lastmods[i] = statbuf.st_mtim.tv_sec;
 			changed = 1;
@@ -75,33 +91,22 @@ int main (const int argc, const char **argv) {
 	sigaction(SIGPWR, &act, NULL);
 
 	const char *cmd = argv[1+onhang];
-	const int filec = argc-2-onhang;
 	const char **filev = &(argv[2+onhang]);
-	long int lastmods[filec];
+	filec = argc-2-onhang;
+	fdv = malloc(sizeof(int)*filec);
+	for (int i = 0; i < filec; i++) {
+		fdv[i] = open(filev[i], O_RDONLY|O_WRONLY); // cant read nor write;
+	}
+	lastmods = calloc(filec, sizeof(long int));
 
 	while (1) {
 		clock_nanosleep(CLOCK_MONOTONIC, 0, &await, NULL);
 		// file mod guard
-		if (!stats(filev, filec, lastmods)) continue;
+		if (!stats(fdv, filec, lastmods)) continue;
 
-		if (child) {
-			// could also readdir(/proc) and fill all children of child
-			// this, however, is WAY simpler
-			char *killchildren = malloc(1024);
-			snprintf(killchildren, 1024,
-"children=$(pstree -p %d |sed \"s|-+\\?-\\?-|\\n|g\" | sed 's|[a-zAZ{} -|`]*(\\([0-9]\\+\\))|\\1|')\n\
-for i in $children\n\
-do \n kill $i \n done" , child);
-			assert(!system(killchildren));
-			kill(child, SIGTERM);
-			int status;
-			printf("child::%d\n", waitpid(child, &status, 0));
-			printf("ded: %d\n", WIFEXITED(status));
-			printf("code: %d\n", WEXITSTATUS(status));
-		}
+		if (child) kill_child();
 
 		child = fork();
-		printf("child: %d\n", child);
 		assert(child >= 0);
 
 		// is child guard
