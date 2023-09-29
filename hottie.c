@@ -1,12 +1,10 @@
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #include <assert.h>
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
@@ -15,7 +13,7 @@
 void sigignore(int signal) {}
 
 pid_t child = 0;
-int *fdv;
+int *fdv; // could use fstatat to possibly speed-up linux lookup
 int filec;
 long int *lastmods;
 void kill_child() {
