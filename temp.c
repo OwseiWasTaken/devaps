@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 typedef struct {
 	int head; // amount of items stored
@@ -88,23 +89,46 @@ void vec_free(vector *vec) {
 }
 
 int main(int argc, char** argv) {
-	vector *kelvins = vec_make(0, 0, NULL);
+	vector *kelvin = vec_make(0, 0, NULL);
+	vector *fahrenheit = vec_make(0, 0, NULL);
+	vector *celsius = vec_make(0, 0, NULL);
+	vector *current = celsius;
 
-	vec_push(kelvins, "0ola");
-	vec_push(kelvins, "1ola");
-	vec_push(kelvins, "2ola");
-	vec_push(kelvins, "3ola");
-	vec_push(kelvins, "4ola");
-	vec_push(kelvins, "5ola");
+	for (int i = 1; i<argc; i++) {
+		if (!strncmp(argv[i], "-k", 2)) {
+			current = kelvin;
+		} else if (!strncmp(argv[i], "-f", 2)) {
+			current = fahrenheit;
+		} else if (!strncmp(argv[i], "-c", 2)) {
+			current = celsius;
+		} else {
+			vec_push(current, argv[i]);
+		}
+	}
 
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
-	printf("%p\n", vec_pop(kelvins));
+	if (kelvin->head) {
+		printf("to kelvin:\n");
+		while (kelvin->head) {
+			printf("%s\n", (char*)vec_pop(kelvin));
+		}
+	}
 
-	vec_free(kelvins);
+	if (fahrenheit->head) {
+		printf("to fahrenheit:\n");
+		while (fahrenheit->head) {
+			printf("%s\n", (char*)vec_pop(fahrenheit));
+		}
+	}
+
+	if (celsius->head) {
+		printf("to celsius:\n");
+		while (celsius->head) {
+			printf("%s\n", (char*)vec_pop(celsius));
+		}
+	}
+
+	vec_free(kelvin);
+	vec_free(fahrenheit);
+	vec_free(celsius);
 }
 
