@@ -90,9 +90,23 @@ $ ctc 104 101 108 108 111 10
 
 $ ctc -1 104 101 108 108 111 10
 hello
-
 ```
 
+if no arguments (except flags) are provided to ctc, it will read from stdinj
+```shell
+$ echo "hello" | ctc
+h:104
+e:101
+l:108
+l:108
+o:111
+```
+
+you can even pipe the output from ctc to ctc, to revet the changes
+```shell
+$ echo "hello" | ctc -1 | ctc -1
+hello
+```
 ## hottie.c
 hot reloader in C
 

@@ -23,44 +23,56 @@ void char_to_code(char *text) {
 	}
 }
 
-void code_to_char(int code) {
+// segfaults when code is too big (like 123456789)
+void code_to_char(unsigned int code) {
 	if (piped) {
-		printf("%c", (char)code);
+		printf("%c", (unsigned char)code);
 		return;
 	}
 
-	if ( isprint(code) || (8 <= code && code <=13) ) {
-		if (8 <= code && code <=13) {
-			printf("%d:%s\n", code, code_to_escape[code-8]);
-		} else {
-			printf("%d:%c\n", code, (char)code);
-		}
+	if (8 <= code && code <=13) {
+		printf("%d:%s\n", code, code_to_escape[code-8]);
+	} else if ( isprint(code) ) {
+		printf("%d:%c\n", code, (unsigned char)code);
 	} else {
 		printf("%d:0x%02x\n", code, code);
 	}
 }
 
+void print_line(char *line) {
+	if (isdigit(line[0])) {
+		char *digit = strtok(line, ":, \n");
+		while (digit) {
+			code_to_char(atoi(digit));
+			digit = strtok(NULL, ":, \n");
+		}
+	} else {
+		char_to_code(line);
+	}
+}
+
 // TODO: implement reading from stdin
 int main(int argc, char **argv) {
-	if (argc <= 1) return EXIT_SUCCESS;
-
-	if (!strncmp(argv[1], "-1", 2)) {
-		argc--; // skip flag
-		argv = &(argv[1]);
-		piped = 1;
+	if (argc > 1) {
+		if (!strncmp(argv[1], "-1", 2)) {
+			argc--; // skip flag
+			argv = &(argv[1]);
+			piped = 1;
+		}
 	}
 
-	// -1 flag to print
-	for (int i = 1; i<argc; i++) {
-		if (isdigit(argv[i][0])) {
-			char *digit = strtok(argv[i], ":, \n");
-			while (digit) {
-				code_to_char(atoi(digit));
-				digit = strtok(NULL, ":, \n");
-			}
-		} else {
-			char_to_code(argv[i]);
+	if (argc == 1) {
+		char buffer[BUFSIZ];
+		int read = scanf("%s\n", buffer);
+		while (read > 0) {
+			print_line(buffer);
+			read = scanf("%s\n", buffer);
 		}
+		return EXIT_SUCCESS;
+	}
+
+	for (int i = 1; i<argc; i++) {
+		print_line(argv[i]);
 	}
 	return EXIT_SUCCESS;
 }
