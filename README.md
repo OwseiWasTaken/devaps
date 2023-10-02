@@ -54,6 +54,45 @@ $ timer "10 a b" "5 c" 3
 
 <!-- TODO: make ctc again -->
 
+## ctc.c
+character to code / code to character converter
+it will convert codes/chars chars/codes as per the ASCII table.<br>
+you can convert a string of chars by writing all of them together
+and you can convert a string of codes by separating them with any of the ':', ',', ' ', '\n' delimiters
+
+there's a -1 flag for piping, it transforms the output into easly readable text
+
+```shell
+$ctc "hello\n"
+h:104
+e:101
+l:108
+l:108
+o:111
+\n:10
+
+$ctc -1 "hello\n"
+104
+101
+108
+108
+111
+10
+
+$ ctc 104 101 108 108 111 10
+104:h
+101:e
+108:l
+108:l
+111:o
+10:\n
+
+
+$ ctc -1 104 101 108 108 111 10
+hello
+
+```
+
 ## hottie.c
 hot reloader in C
 
