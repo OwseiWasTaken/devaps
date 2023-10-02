@@ -2,7 +2,7 @@
 
 ## Apps for my everyday coding :)
 
-<!-- TODO: remake todos.go (maybe in c) so it doesn't use gc.py -->
+<!-- TODO: remake todos.go (maybe even in c) so it doesn't use gc.py -->
 ## todos.go
 TODOs finder in go
 
@@ -30,25 +30,26 @@ todos.go:
 
 as you can see, todos.go doesn't print descriptions _yet_
 
-<!-- TODO: remake timer.go (maybe in c) so it doesn't use gc.py -->
-## timer.go
-timer scheduler in go
+## timer.c
+timer scheduler in c
 
-usage: timer timers[:label] [label]<br>
-adding a label with ':' or as an argument means the same.<br>
-however with ':' the label can be a number.<br>
-the labes added without ':' can be concatenated to the last defined timer.<br>
+each argument is a timer, that **must** define a timer length
+and optionally defines the timer label.
+the labels can be separated from the timer length with ':', '-', ')' or ' '
+
+usage: ./timer timers[:-) label]<br>
 ```shell
-$ timer 10 hi
-timer 1 hi: 10.0 seconds left
+$ timer "10 hi"
+1: hi: 10.000
 
-$ timer 10:hi
-timer 1 hi: 10.0 seconds left
+$ timer 10:hi 5-hello
+1: hi: 10.000
+2: hello: 5.000
 
-$ timer 10 a b 5 c 3
-timer 1 a b c: 10.0 seconds left
-timer 2 c: 5.0 seconds left
-timer 3: 3.0 seconds left
+$ timer "10 a b" "5 c" 3
+1: a b: 10.000
+2: c: 5.000
+3: timer: 3.000
 ```
 
 <!-- TODO: make ctc again -->

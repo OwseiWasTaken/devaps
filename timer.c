@@ -10,6 +10,12 @@ typedef struct {
 	float total;
 } timer;
 
+// SoA could be faster than AoS
+//typedef struct {
+//	char* label[];
+//	float total[];
+//} timers;
+
 int main(int argc, char *argv[]) {
 	char cursor_reset[50];
 	timer timers[argc];
