@@ -91,10 +91,10 @@ int main (const int argc, const char **argv) {
 
 	const char *cmd = argv[1+onhang];
 	const char **filev = &(argv[2+onhang]);
-	filec = argc-2-onhang;
+	filec = argc-2-onhang; // one for cmd, one for $0
 	fdv = malloc(sizeof(int)*filec);
 	for (int i = 0; i < filec; i++) {
-		fdv[i] = open(filev[i], O_RDONLY|O_WRONLY); // cant read nor write;
+		fdv[i] = open(filev[i], 0); // doesn't need to have permission to read/write
 	}
 	lastmods = calloc(filec, sizeof(long int));
 
