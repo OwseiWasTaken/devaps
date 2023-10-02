@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
 	sprintf(cursor_reset, "\x1b[%dA", argc);
 
 	for (int i = 1; i<argc; i++) {
-		char *time = strtok(argv[i], ":");
-		char *label = strtok(NULL, ":");
+		char *time = strtok(argv[i], " :-)");
+		char *label = strtok(NULL, "");
 
 		timer a = { .label = label?label:"timer", .total = atof(time) };
 		timers[i] = a;
@@ -55,6 +55,9 @@ int main(int argc, char *argv[]) {
 		puts(cursor_reset);
 
 		clock_nanosleep(CLOCK_MONOTONIC, 0, &step, NULL);
+	}
+	for (int i = 1; i<argc; i++) {
+		putc('\n', stdout);
 	}
 	return 0;
 }
