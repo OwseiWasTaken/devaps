@@ -5,11 +5,11 @@
 
 int piped = 0;
 void char_to_code(char *text) {
-	for (int i = 0; i<strlen(text); i++) {
+	for (int i = 0; text[i]; i++) {
 		if (piped) {
-			printf("%d\n", (int)text[i]);
+			printf("%u\n", (unsigned int)text[i]);
 		} else {
-			printf("%c:%d\n", text[i], (int)text[i]);
+			printf("%c:%u\n", text[i], (unsigned int)text[i]);
 		}
 	}
 }
@@ -39,10 +39,10 @@ int main(int argc, char **argv) {
 	// -1 flag to print
 	for (int i = 1; i<argc; i++) {
 		if (isdigit(argv[i][0])) {
-			char *digit = strtok(argv[i], ":-, ");
+			char *digit = strtok(argv[i], ":, \n");
 			while (digit) {
 				code_to_char(atoi(digit));
-				digit = strtok(NULL, ":-, ");
+				digit = strtok(NULL, ":, \n");
 			}
 		} else {
 			char_to_code(argv[i]);
