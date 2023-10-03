@@ -109,16 +109,16 @@ float to_fahrenheit(float c) {
 }
 
 float get_celsius(const char *_text) {
-	char text[strlen(_text)];
+	char text[strlen(_text)+1];
 	strcpy(text, _text);
 	char tp = text[strlen(text)-1];
 	char *num = strtok(text, "kfcKFC°");
 	float val = atof(num);
-	if (tp == 'c') {
+	if (tp == 'c' || tp == 'C') {
 		return val;
-	} else if (tp == 'k') {
+	} else if (tp == 'k' || tp == 'K') {
 		return from_kelvin(val);
-	} else if (tp == 'f') {
+	} else if (tp == 'f' || tp == 'F') {
 		return from_fahrenheit(val);
 	} else if (tp == num[strlen(num)-1]) { // it's celsius
 		return val;
@@ -147,30 +147,29 @@ int main(int argc, char **argv) {
 
 	// should print "to <unit>:" ?
 	if (kelvin->head) {
-		//printf("to kelvin:\n");
+		printf("to kelvin:\n");
 		while (kelvin->head) {
 			char *text = (char*)vec_pop(kelvin);
-			// maybe strcpy text inside get_celsius
 			float num = get_celsius(text);
-			printf("%s -> %fK\n", text, to_kelvin(num));
+			printf("%s -> %.3fK\n", text, to_kelvin(num));
 		}
 	}
 
 	if (fahrenheit->head) {
-		//printf("to fahrenheit:\n");
+		printf("to fahrenheit:\n");
 		while (fahrenheit->head) {
 			char *text = (char*)vec_pop(fahrenheit);
 			float num = get_celsius(text);
-			printf("%s -> %f°F\n", text, to_fahrenheit(num));
+			printf("%s -> %.3f°F\n", text, to_fahrenheit(num));
 		}
 	}
 
 	if (celsius->head) {
-		//printf("to celsius:\n");
+		printf("to celsius:\n");
 		while (celsius->head) {
 			char *text = (char*)vec_pop(celsius);
 			float num = get_celsius(text);
-			printf("%s -> %f°C\n", text, num);
+			printf("%s -> %.3f°C\n", text, num);
 		}
 	}
 
