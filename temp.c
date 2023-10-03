@@ -88,7 +88,13 @@ void vec_free(vector *vec) {
 	free(vec);
 }
 
-int main(int argc, char** argv) {
+int get_celsius(char *text) {
+	char tp = text[strlen(text)-1];
+	char *num = strtok(text, "kfcKFC°");
+	printf("%s @ %c\n", text, tp);
+}
+
+int main(int argc, char **argv) {
 	vector *kelvin = vec_make(0, 0, NULL);
 	vector *fahrenheit = vec_make(0, 0, NULL);
 	vector *celsius = vec_make(0, 0, NULL);
@@ -109,21 +115,26 @@ int main(int argc, char** argv) {
 	if (kelvin->head) {
 		printf("to kelvin:\n");
 		while (kelvin->head) {
-			printf("%s\n", (char*)vec_pop(kelvin));
+			char *text = (char*)vec_pop(kelvin);
+			get_celsius(text);
 		}
 	}
 
 	if (fahrenheit->head) {
 		printf("to fahrenheit:\n");
 		while (fahrenheit->head) {
-			printf("%s\n", (char*)vec_pop(fahrenheit));
+			char *text = (char*)vec_pop(fahrenheit);
+			get_celsius(text);
+			//printf("%s\n", (char*)vec_pop(fahrenheit));
 		}
 	}
 
 	if (celsius->head) {
 		printf("to celsius:\n");
 		while (celsius->head) {
-			printf("%s\n", (char*)vec_pop(celsius));
+			char *text = (char*)vec_pop(celsius);
+			get_celsius(text);
+			//printf("%s\n", (char*)vec_pop(celsius));
 		}
 	}
 
