@@ -88,10 +88,43 @@ void vec_free(vector *vec) {
 	free(vec);
 }
 
-int get_celsius(char *text) {
+// f = c*1.8+32
+// c = (f-32)/1.8
+
+// k = c+273.15
+// c = k-273.15
+
+float from_kelvin(float k) {
+	return k-273.15;
+}
+float to_kelvin(float c) {
+	return c+273.15;
+}
+
+float from_fahrenheit(float f) {
+	return (f-32)/1.8;
+}
+float to_fahrenheit(float c) {
+	return c*1.8+32;
+}
+
+float get_celsius(const char *_text) {
+	char text[strlen(_text)];
+	strcpy(text, _text);
 	char tp = text[strlen(text)-1];
 	char *num = strtok(text, "kfcKFC°");
-	printf("%s @ %c\n", text, tp);
+	float val = atof(num);
+	if (tp == 'c') {
+		return val;
+	} else if (tp == 'k') {
+		return from_kelvin(val);
+	} else if (tp == 'f') {
+		return from_fahrenheit(val);
+	} else if (tp == num[strlen(num)-1]) { // it's celsius
+		return val;
+	}
+	fprintf(stderr, "temperature is specified, but unit must K, F or C; got: '%c'\n", tp);
+	return 0.0;
 }
 
 int main(int argc, char **argv) {
@@ -112,29 +145,32 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// should print "to <unit>:" ?
 	if (kelvin->head) {
-		printf("to kelvin:\n");
+		//printf("to kelvin:\n");
 		while (kelvin->head) {
 			char *text = (char*)vec_pop(kelvin);
-			get_celsius(text);
+			// maybe strcpy text inside get_celsius
+			float num = get_celsius(text);
+			printf("%s -> %fK\n", text, to_kelvin(num));
 		}
 	}
 
 	if (fahrenheit->head) {
-		printf("to fahrenheit:\n");
+		//printf("to fahrenheit:\n");
 		while (fahrenheit->head) {
 			char *text = (char*)vec_pop(fahrenheit);
-			get_celsius(text);
-			//printf("%s\n", (char*)vec_pop(fahrenheit));
+			float num = get_celsius(text);
+			printf("%s -> %f°F\n", text, to_fahrenheit(num));
 		}
 	}
 
 	if (celsius->head) {
-		printf("to celsius:\n");
+		//printf("to celsius:\n");
 		while (celsius->head) {
 			char *text = (char*)vec_pop(celsius);
-			get_celsius(text);
-			//printf("%s\n", (char*)vec_pop(celsius));
+			float num = get_celsius(text);
+			printf("%s -> %f°C\n", text, num);
 		}
 	}
 
