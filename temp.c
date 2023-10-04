@@ -113,6 +113,9 @@ float get_celsius(const char *_text) {
 	strcpy(text, _text);
 	char tp = text[strlen(text)-1];
 	char *num = strtok(text, "kfcKFC°");
+	// _text only has "kfcKFC°" chars
+	if (num == NULL) return 0.0;
+
 	float val = atof(num);
 	if (tp == 'c' || tp == 'C') {
 		return val;
