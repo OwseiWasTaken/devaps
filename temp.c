@@ -3,6 +3,16 @@
 #include <assert.h>
 #include <string.h>
 
+#ifndef reallocarray
+#define _LINUX_REALLOC
+void *reallocarray(void *oldarr, int membsize, int narrsize, int oarrsize) {
+	void *ndata = calloc(membsize, narrsize);
+	memmove(ndata, oldarr, oarrsize);
+	free(oldarr);
+	return ndata;
+}
+#endif
+
 typedef struct {
 	int head; // amount of items stored
 	int size; // cap of items
@@ -26,7 +36,11 @@ vector *vec_make(int preloc_size, int used_size, void *data) {
 }
 
 int _vec_double(vector *vec) {
+#ifndef _LINUX_REALLOC
 	void *newdata = reallocarray(vec->data, sizeof(void*), vec->size*2);
+#else
+	void *newdata = reallocarray(vec->data, sizeof(void*), vec->size*2, vec->size);
+#endif
 	if (newdata == NULL) return -1;
 
 	// no need to free after reallocarray
