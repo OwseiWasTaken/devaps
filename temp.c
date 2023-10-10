@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#define _SIMPLE_C_VECTOR_IMPLEMENTATION
-#include "simple.c"
+#define _SIMPLE_VECTOR_IMPLEMENTATION
+#include "simple.h"
 
 // f = c*1.8+32
 // c = (f-32)/1.8

@@ -1,5 +1,5 @@
-#ifndef _SIMPLE_C_
-#define _SIMPLE_C_
+#ifndef _SIMPLE_
+#define _SIMPLE_
 
 typedef struct {
 	int head; // amount of items stored
@@ -20,7 +20,8 @@ int _vec_insert(vector *vec, void *data, int index);
 int _vec_sethead(vector *vec, int newhead);
 
 // *vec_free doesn't free() bytes inside **data
-#ifdef _SIMPLE_C_VECTOR_IMPLEMENTATION
+#ifdef _SIMPLE_VECTOR_IMPLEMENTATION
+#include <errno.h>
 vector *vec_make(int preloc_size, int used_size, void *data) {
 	if (preloc_size == 0) {
 		assert(data == NULL); // can't init vector with data and size = 0
@@ -82,6 +83,7 @@ int _vec_insert(vector *vec, void *data, int index) {
 
 void *_vec_get(vector *vec, int index) {
 	if (index > vec->size) {
+		errno = ERANGE;
 		return NULL;
 	}
 	return vec->data[index];
@@ -89,6 +91,7 @@ void *_vec_get(vector *vec, int index) {
 
 void *vec_pop(vector *vec) {
 	if (vec->head == 0) {
+		errno = ERANGE;
 		return NULL;
 	}
 	vec->head--;
@@ -101,4 +104,4 @@ void vec_free(vector *vec) {
 }
 #endif
 
-#endif // _SIMPLE_C_
+#endif // _SIMPLE_
