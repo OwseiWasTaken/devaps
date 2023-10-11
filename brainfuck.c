@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ncurses.h>
+
 #define _SIMPLE_VECTOR_IMPLEMENTATION
 #include "simple.h"
 
@@ -80,6 +82,16 @@ bf_op_TYPE char_to_type(char op) {
 	return 0;
 }
 
+char *stringify_tape(char *tape, int size) {
+	char *text = malloc(size*5);
+	for (int i = 0; i<size; i++) {
+		snprintf(text+(i*5), 6, "%03hhu, ", tape[i]);
+	}
+	text[size*5-2] = ' ';
+	text[size*5-1] = '\0';
+	return text;
+}
+
 int main(const int argc, const char **argv) {
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s <file.bf>\n", argv[0]);
@@ -88,7 +100,7 @@ int main(const int argc, const char **argv) {
 
 	const char* bf_filename = argv[1];
 	struct stat statbuf;
-	stat(bf_filename, &statbuf);
+	assert(stat(bf_filename, &statbuf) == 0);
 	char *bf_filebuffer = malloc(statbuf.st_size);
 	const int bf_fd = open(bf_filename, O_RDONLY);
 	const size_t doneread = read(bf_fd, bf_filebuffer, statbuf.st_size);
@@ -111,7 +123,8 @@ int main(const int argc, const char **argv) {
 	}
 
 	bf_op bf_buffer[bf_size];
-	char bf_text_buffer[bf_size];
+	char bf_text_buffer[bf_size+1];
+	bf_text_buffer[bf_size] = 0;
 	vector *loops = vec_make(0, 0, NULL);
 	for (size_t i = 0; i<bf_size; i++) {
 		bf_buffer[i].type = bf_typebuffer[i];
@@ -133,35 +146,83 @@ int main(const int argc, const char **argv) {
 	vec_free(loops);
 
 	bf_op cop;
-	size_t head = 0;
 	char tape[TAPE_SIZE] = {0};
-	//char _;
-	for (size_t i = 0; i<bf_size; i++) {
-		// make actual debug 'menu'
-		//read(0, &_, 1);
-		//system("clear");
-		//printf("\x1b[%ldD%s%c", bf_size-i-1, nc, bf_text_buffer[i-1]);
-		//printf("%s", bf_text_buffer);
-		//printf("\x1b[%ldD%s%c%s", bf_size-i, orange, bf_text_buffer[i], nc);
-		//fflush(stdout);
+	size_t head = 0;
+	size_t headmax = 0;
+
+	initscr();
+	WINDOW *winbf_src    = newwin(12, COLS, 0, 0);
+	WINDOW *winbf_status = newwin(4, COLS, 12, 0);
+	WINDOW *winbf_stdout = newwin(5, COLS, 12+4, 0);
+	WINDOW *winbf_tape   = newwin(LINES-(12+4+5), COLS, 12+4+5, 0);
+
+	//box(winbf_status, -1, -1);
+	//box(winbf_src, -1, -1);
+	//box(winbf_tape, -1, -1);
+
+	cbreak();
+	noecho();
+	curs_set(0);
+
+	mvwhline(winbf_status, 0, 0, 0, COLS);
+	mvwprintw(winbf_status, 0, 2, "< %s >", argv[1]);
+
+	mvwhline(winbf_status, 3, 0, 0, COLS);
+	mvwprintw(winbf_status, 3, 2, "< output >");
+
+	mvwhline(winbf_stdout, 4, 0, 0, COLS);
+	mvwprintw(winbf_stdout, 4, 2, "< memory tape >");
+	wmove(winbf_stdout, 0, 0);
+
+	wrefresh(winbf_status);
+	wrefresh(winbf_stdout);
+	int ch = ' ';
+
+	for (size_t clock = 0, i = 0; i<bf_size; i++, clock++) {
+		mvwprintw(winbf_src, 0, 0, "%s", bf_text_buffer);
+		mvwaddch(winbf_src, i/COLS, i%COLS, bf_text_buffer[i] | A_REVERSE);
+		wrefresh(winbf_src);
+
+		mvwprintw(winbf_status, 1, 0, "tick: %ld; furthest tape block: %ld  ", clock, headmax);
+		mvwprintw(winbf_status, 2, 0, "head value: %hhu; tape head: %ld k:%c k:%d  ", tape[head], head, ch, ch);
+		//mvwprintw(winbf_status, 2, 0, "char: %ld,%ld  ", i%COLS, i/COLS);
+		wrefresh(winbf_status);
+
+		//TODO do huge allocs lates
+		if (headmax < 100 ) {
+			char *tape_view = stringify_tape(tape, headmax+1);
+			mvwprintw(winbf_tape, 0, 0, "%s", tape_view);
+			free(tape_view);
+			mvwaddch(winbf_tape, head*5/COLS, head*5%COLS+3, ' ' | A_REVERSE);
+		} else { // or get centering program
+			mvwprintw(winbf_tape, 0, 0, "tape too big to display");
+			//mvwprintw(winbf_tape, 0, 0, "tape not displayer, -O3 detected");
+		}
+		wrefresh(winbf_tape);
+
+		//ch = wgetch(winbf_src);
+
 		cop = bf_buffer[i];
 		switch(cop.type) {
 		case StartLoop:
 			if (!tape[head]) {
-				i = cop.index;
+				i = cop.index-1;
 			}
 			break;
 		case EndLoop:
-			if (!tape[head]) {
+			if (tape[head]) {
 				i = cop.index;
 			}
 			break;
 		case HeadLeft:
-			assert(head > 0);
+			//TODO: should declare tape limit
+			if (head == 0) head = headmax+1;
+			//assert(head > 0);
 			head--;
 			break;
 		case HeadRight:
 			assert(head < TAPE_SIZE);
+			if (headmax == head) headmax++;
 			head++;
 			break;
 		case Increment:
@@ -171,13 +232,32 @@ int main(const int argc, const char **argv) {
 			tape[head]--;
 			break;
 		case GetKey:
-			tape[head] = 69;
+			wmove(winbf_status, 1, 0);
+			wclrtoeol(winbf_status);
+			wmove(winbf_status, 2, 0);
+			wclrtoeol(winbf_status);
+
+			mvwprintw(winbf_status, 1, 0, "%s if asking for input!", argv[1]);
+			mvwprintw(winbf_status, 2, 0, "press enter");
+			while (wgetch(winbf_status) != '\n') {}
+			mvwprintw(winbf_status, 2, 0, "press your input key");
+			ch = wgetch(winbf_status);
+			tape[head] = (char)ch;
 			break;
 		case PrintKey:
-			fputc(tape[head], stdout);
+			if (tape[head] == '\n') {
+				waddch(winbf_stdout, ',');
+				waddch(winbf_stdout, ' ');
+				wrefresh(winbf_stdout);
+			} else {
+				waddch(winbf_stdout, tape[head]);
+				wrefresh(winbf_stdout);
+			}
+			//fputc(tape[head], stdout);
 			break;
 		}
 	}
+	endwin();
 	free(bf_filebuffer);
 	return tape[head];
 }
