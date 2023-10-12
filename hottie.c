@@ -23,7 +23,8 @@ void kill_child() {
 "children=$(pstree -p %d |sed \"s|-+\\?-\\?-|\\n|g\" | sed 's|[a-zAZ{} -|`]*(\\([0-9]\\+\\))|\\1|')\n\
 for i in $children\n\
 do \n kill $i \n done" , child);
-	assert(!system(killchildren));
+	int r = system(killchildren);
+	assert(!r);
 	free(killchildren);
 
 	kill(child, SIGTERM);

@@ -11,7 +11,7 @@ typedef struct {
 vector *vec_make(int preloc_size, int used_size, void *data);
 int vec_push(vector *vec, void *data);
 void *vec_pop(vector *vec);
-void vec_free(vector *vec); // *
+void vec_free(vector *vec);
 
 // internal, more specific, functions
 void *_vec_get(vector *vec, int index);
@@ -103,5 +103,41 @@ void vec_free(vector *vec) {
 	free(vec);
 }
 #endif
+
+#define FNV_PRIME 0x811C9DC5
+
+#ifdef __cplusplus
+#include <string>
+unsigned int FNVStringHash(std::string str);
+#endif
+unsigned int FNVHash(const char *blob, size_t blob_size);
+
+#ifdef _SIMPLE_FNVHASH_IMPLEMENTATION
+
+#ifndef __cplusplus
+#include <string.h>
+#endif
+
+#ifdef __cplusplus
+unsigned int FNVStringHash(std::string str) {
+	return FNVHash(str.c_str(), str.length());
+}
+#else
+unsigned int FNVStringHash(char* str) {
+	return FNVHash(str, strlen(str));
+}
+#endif
+
+unsigned int FNVHash(const char *blob, size_t blob_size) {
+	unsigned int hash = 0;
+
+	for (int i = 0; i < blob_size; i++) {
+		hash *= FNV_PRIME;
+		hash ^= blob[i];
+	}
+
+	return hash;
+}
+#endif // FNV Hash implementation
 
 #endif // _SIMPLE_
