@@ -336,6 +336,7 @@ int dlist_append(dlist *dl, void *obj){
 		dl->first = boxed;
 	}
 	dl->last = boxed;
+	return 0;
 }
 
 int dlist_push(dlist *dl, void *obj){
@@ -351,6 +352,7 @@ int dlist_push(dlist *dl, void *obj){
 		dl->last = boxed;
 	}
 	dl->first = boxed;
+	return 0;
 }
 
 int dlist_set(dlist *dl, size_t index, void *obj) {
@@ -366,6 +368,7 @@ int dlist_set(dlist *dl, size_t index, void *obj) {
 	}
 
 	nd->obj = obj;
+	return 0;
 }
 
 int dlist_remove(dlist *dl, size_t index) {
