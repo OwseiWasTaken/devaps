@@ -437,9 +437,12 @@ typedef struct {
 
 hashmap *map_make(size_t size, int gc, size_t (*HashFunction)(char *keyblob, size_t blobsize));
 int map_add(hashmap *map, char *keyblob, size_t blobsize, void *obj);
+int map_remove(hashmap *map, char *keyblob, size_t blobsize);
 void *map_search(hashmap *map, char *keyblob, size_t blobsize);
-int map_remove(char *keyblob, size_t blobsize);
 void map_free(hashmap *map);
+
+#define _SIMPLE_MAP_FREEKEY 1
+#define _SIMPLE_MAP_FREEOBJ 2
 
 #ifdef _SIMPLE_HASHMAP_IMPLEMENTATION
 
@@ -511,10 +514,36 @@ void *map_search(hashmap *map, char *keyblob, size_t blobsize) {
 }
 
 void hashnode_free(struct _hashnode *hnode, int do_gc) {
-	if (do_gc) {
+	if (do_gc&_SIMPLE_MAP_FREEOBJ) {
 		free(hnode->obj);
 	}
+	if (do_gc&_SIMPLE_MAP_FREEKEY) {
+		free(hnode->keyblob);
+	}
 	free(hnode);
+}
+
+int map_remove(hashmap *map, char *keyblob, size_t blobsize) {
+	size_t hash = __hash(map, keyblob, blobsize);
+	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
+
+	int found = 0;
+	for (size_t i = 0; i < nlist->head; i++) {
+		// direct access for easier multi-thread implementation
+		if (!found) {
+			struct _hashnode *hnode = nlist->data[i];
+			if (hnode->blobsize != blobsize) {continue;}
+			if (!memcmp(keyblob, hnode->keyblob, blobsize)) {
+				found = 1;
+				hashnode_free(hnode, map->do_gc);
+			}
+		} else {
+			nlist->data[i-1] = nlist->data[i];
+		}
+	}
+	nlist->head--;
+	errno = ERANGE;
+	return -1;
 }
 
 char *bstr(char *blob, size_t size) {
@@ -529,8 +558,8 @@ char *bstr(char *blob, size_t size) {
 void map_print(hashmap *map) {
 	for (size_t i = 0; i < map->size; i++) {
 		vector *nlist = map->nodes[i];
-		if (!nlist->head) {continue;}
-		printf("%ld:\n", i);
+		if (!nlist->head) { continue; }
+		printf("vec_%ld [%d] {\n", i, nlist->head);
 		for (size_t k = 0; k < nlist->head; k++) {
 			struct _hashnode *hnode = nlist->data[k];
 			char *t1 = bstr(hnode->keyblob, hnode->blobsize);
@@ -539,6 +568,7 @@ void map_print(hashmap *map) {
 			free(t1);
 			free(t2);
 		}
+		printf("}\n");
 	}
 }
 
@@ -551,8 +581,11 @@ void map_printf(hashmap *map,
 ) {
 	for (size_t i = 0; i < map->size; i++) {
 		vector *nlist = map->nodes[i];
-		if (!nlist->head) {continue;}
-		printf("%ld:\n", i);
+		if (!nlist->head) {
+			printf("vec_%ld [0] {}\n", i);
+			continue;
+		}
+		printf("vec_%ld [%d] {\n", i, nlist->head);
 		for (size_t k = 0; k < nlist->head; k++) {
 			struct _hashnode *hnode = nlist->data[k];
 			char *kstr = ktostr(hnode->keyblob, hnode->blobsize);
@@ -565,10 +598,9 @@ void map_printf(hashmap *map,
 				free(ostr);
 			}
 		}
+		printf("}\n");
 	}
 }
-
-	size_t (*HashFunction)(char *keyblob, size_t blobsize);
 
 void map_free(hashmap *map) {
 	for (size_t i = 0; i < map->size; i++) {
