@@ -1,6 +1,13 @@
 #ifndef _SIMPLE_
 #define _SIMPLE_
 
+#include <string.h>
+#define fats(str) str, strlen(str)
+
+#ifdef _SIMPLE_HASHMAP_IMPLEMENTATION
+#define _SIMPLE_VECTOR_IMPLEMENTATION
+#endif
+
 #include <sys/types.h>
 // vector
 
@@ -13,16 +20,19 @@ typedef struct {
 vector *vec_make(int preloc_size, int used_size, void *data);
 void vec_free(vector *vec);
 int vec_push(vector *vec, void *data);
+int vec_set(vector *vec, void *data, int index);
 void *vec_pop(vector *vec);
-void *_vec_get(vector *vec, int index);
+void *vec_tail(vector *vec);
+void *vec_head(vector *vec);
+void *vec_get(vector *vec, int index);
 int _vec_double(vector *vec);
-int _vec_insert(vector *vec, void *data, int index);
 int _vec_sethead(vector *vec, int newhead);
 
 // *vec_free doesn't free() bytes inside **data
 #ifdef _SIMPLE_VECTOR_IMPLEMENTATION
 #include <errno.h>
 #include <stdlib.h>
+#include <assert.h>
 vector *vec_make(int preloc_size, int used_size, void *data) {
 	if (preloc_size == 0) {
 		assert(data == NULL); // can't init vector with data and size = 0
@@ -33,9 +43,7 @@ vector *vec_make(int preloc_size, int used_size, void *data) {
 		data = calloc(sizeof(void*), preloc_size);
 	}
 	vector *vec = malloc(sizeof(vector));
-	if (vec == NULL) {
-		errno = ENOMEM;
-	} else {
+	if (vec != NULL) {
 		vec->size = preloc_size;
 		vec->head = used_size;
 		vec->data = data;
@@ -75,7 +83,7 @@ int _vec_sethead(vector *vec, int newhead) {
 }
 
 // sets head to be index+1
-int _vec_insert(vector *vec, void *data, int index) {
+int vec_set(vector *vec, void *data, int index) {
 	while (index >= vec->size) {
 		if (_vec_double(vec)) {
 			return -1;
@@ -86,7 +94,7 @@ int _vec_insert(vector *vec, void *data, int index) {
 	return 0;
 }
 
-void *_vec_get(vector *vec, int index) {
+void *vec_get(vector *vec, int index) {
 	if (index > vec->size) {
 		errno = ERANGE;
 		return NULL;
@@ -103,6 +111,22 @@ void *vec_pop(vector *vec) {
 	return vec->data[vec->head];
 }
 
+void *vec_tail(vector *vec) {
+	if (vec->head == 0) {
+		errno = ERANGE;
+		return NULL;
+	}
+	return vec->data[vec->head-1];
+}
+
+void *vec_head(vector *vec) {
+	if (vec->head == 0) {
+		errno = ERANGE;
+		return NULL;
+	}
+	return vec->data[0];
+}
+
 void vec_free(vector *vec) {
 	free(vec->data);
 	free(vec);
@@ -117,28 +141,25 @@ void vec_free(vector *vec) {
 #include <string>
 unsigned int FNVStringHash(std::string str);
 #endif
-unsigned int FNVHash(const char *blob, size_t blob_size);
+unsigned int FNVHash(const char *blob, size_t blobsize);
 
 #ifdef _SIMPLE_FNVHASH_IMPLEMENTATION
-
-#ifndef __cplusplus
-#include <string.h>
-#endif
 
 #ifdef __cplusplus
 unsigned int FNVStringHash(std::string str) {
 	return FNVHash(str.c_str(), str.length());
 }
 #else
+#include <string.h>
 unsigned int FNVStringHash(char* str) {
 	return FNVHash(str, strlen(str));
 }
 #endif
 
-unsigned int FNVHash(const char *blob, size_t blob_size) {
+unsigned int FNVHash(const char *blob, size_t blobsize) {
 	unsigned int hash = 0;
 
-	for (int i = 0; i < blob_size; i++) {
+	for (int i = 0; i < blobsize; i++) {
 		hash *= FNV_PRIME;
 		hash ^= blob[i];
 	}
@@ -184,9 +205,7 @@ int dlist_remove(dlist *dl, size_t index); // [index-1].next = [index+1]
 #include <stdlib.h>
 dlist *dlist_make(int collect_garbage) {
 	dlist *dl = malloc(sizeof(dlist));
-	if (dl == NULL) {
-		errno = ENOMEM;
-	} else {
+	if (dl != NULL) {
 		dl->len = 0;
 		dl->first = NULL;
 		dl->last = NULL;
@@ -215,9 +234,7 @@ void dnode_free(struct _dnode *nd, int free_obj) {
 
 struct _dnode *dnode_box(void *obj) {
 	struct _dnode *nd = malloc(sizeof(struct _dnode));
-	if (nd == NULL) {
-		errno = ENOMEM;
-	} else {
+	if (nd != NULL) {
 		nd->obj = obj;
 		nd->next = NULL;
 		nd->prev = NULL;
@@ -401,5 +418,170 @@ int dlist_remove(dlist *dl, size_t index) {
 	return 0;
 }
 #endif // _SIMPLE_DLIST_IMPLEMENTATION
+
+
+struct _hashnode {
+	void *obj;
+	char *keyblob;
+	size_t blobsize;
+};
+
+typedef struct {
+	size_t size; // amount of lists in vector
+	size_t used; // amount of used nodes in vector
+	size_t entries; // sum of
+	int do_gc;
+	size_t (*HashFunction)(char *keyblob, size_t blobsize);
+	vector/*<*_hashnode>*/ **nodes;
+} hashmap;
+
+hashmap *map_make(size_t size, int gc, size_t (*HashFunction)(char *keyblob, size_t blobsize));
+int map_add(hashmap *map, char *keyblob, size_t blobsize, void *obj);
+void *map_search(hashmap *map, char *keyblob, size_t blobsize);
+int map_remove(char *keyblob, size_t blobsize);
+void map_free(hashmap *map);
+
+#ifdef _SIMPLE_HASHMAP_IMPLEMENTATION
+
+hashmap *map_make(size_t size, int gc, size_t (*HashFunction)(char *keyblob, size_t blobsize)) {
+	hashmap *map = malloc(sizeof(hashmap));
+	if (map != NULL) {
+		map->size = size;
+		map->used = 0;
+		map->entries = 0;
+		map->do_gc = gc;
+		map->nodes = calloc(sizeof(vector), size);
+		map->HashFunction = HashFunction;
+		//TODO vec_2dmake(size) for single calloc
+		for (size_t i = 0; i < size; i++) {
+			map->nodes[i] = vec_make(0, 0, NULL);
+		}
+	}
+	return map;
+}
+
+struct _hashnode *hashnode_box(char *keyblob, size_t blobsize, void *obj) {
+	struct _hashnode *hnode = malloc(sizeof(struct _hashnode));
+	if (hnode != NULL) {
+		hnode->obj = obj;
+		hnode->keyblob = keyblob;
+		hnode->blobsize = blobsize;
+	}
+	return hnode;
+}
+
+size_t __hash(hashmap *map, char *keyblob, size_t blobsize) {
+	return map->HashFunction(keyblob, blobsize);
+}
+
+vector/*<*_hashnode>*/ *__map_get_nlist(hashmap *map, char *keyblob, size_t blobsize) {
+	size_t hash = __hash(map, keyblob, blobsize);
+	return map->nodes[hash%map->size];
+}
+
+int map_add(hashmap *map, char *keyblob, size_t blobsize, void *obj) {
+	struct _hashnode *hnode = hashnode_box(keyblob, blobsize, obj);
+	size_t hash = __hash(map, keyblob, blobsize);
+	if (hnode == NULL) {return -1;}
+	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
+#ifdef NDEBUG
+	if (!nlist->head) {
+		map->used++;
+	}
+	map->entries;
+#endif
+	vec_push(nlist, hnode);
+	return 0;
+}
+
+void *map_search(hashmap *map, char *keyblob, size_t blobsize) {
+	size_t hash = __hash(map, keyblob, blobsize);
+	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
+
+	for (size_t i = 0; i < nlist->head; i++) {
+		// direct access for easier multi-thread implementation
+		struct _hashnode *hnode = nlist->data[i];
+		if (hnode->blobsize != blobsize) {continue;}
+		if (!memcmp(keyblob, hnode->keyblob, blobsize)) {
+			return hnode->obj;
+		}
+	}
+	errno = ERANGE;
+	return NULL;
+}
+
+void hashnode_free(struct _hashnode *hnode, int do_gc) {
+	if (do_gc) {
+		free(hnode->obj);
+	}
+	free(hnode);
+}
+
+char *bstr(char *blob, size_t size) {
+	char *text = malloc(size*5-1);
+	for (int i = 0; i < size; i++) {
+		snprintf(text+(i*5), 6, "%03hhu, ", blob[i]);
+	}
+	text[size*5-2] = '\0';
+	return text;
+}
+
+void map_print(hashmap *map) {
+	for (size_t i = 0; i < map->size; i++) {
+		vector *nlist = map->nodes[i];
+		if (!nlist->head) {continue;}
+		printf("%ld:\n", i);
+		for (size_t k = 0; k < nlist->head; k++) {
+			struct _hashnode *hnode = nlist->data[k];
+			char *t1 = bstr(hnode->keyblob, hnode->blobsize);
+			char *t2 = bstr(hnode->obj, strlen(hnode->obj));
+			printf("\t%s: %s\n", t1, t2);
+			free(t1);
+			free(t2);
+		}
+	}
+}
+
+#define _SIMPLE_MAPPRINTF_FREE_KEYSTR 1
+#define _SIMPLE_MAPPRINTF_FREE_OBJSTR 2
+void map_printf(hashmap *map,
+	char *(*ktostr)(char *keyblob, size_t blobsize),
+	char *(*objtostr)(void *obj),
+	int freeopt
+) {
+	for (size_t i = 0; i < map->size; i++) {
+		vector *nlist = map->nodes[i];
+		if (!nlist->head) {continue;}
+		printf("%ld:\n", i);
+		for (size_t k = 0; k < nlist->head; k++) {
+			struct _hashnode *hnode = nlist->data[k];
+			char *kstr = ktostr(hnode->keyblob, hnode->blobsize);
+			char *ostr = objtostr(hnode->obj);
+			printf("\t%s: %s\n", kstr, ostr);
+			if (freeopt & _SIMPLE_MAPPRINTF_FREE_KEYSTR) {
+				free(kstr);
+			}
+			if (freeopt & _SIMPLE_MAPPRINTF_FREE_OBJSTR) {
+				free(ostr);
+			}
+		}
+	}
+}
+
+	size_t (*HashFunction)(char *keyblob, size_t blobsize);
+
+void map_free(hashmap *map) {
+	for (size_t i = 0; i < map->size; i++) {
+		vector *nlist = map->nodes[i];
+		for (size_t k = 0; k < nlist->head; k++) {
+			hashnode_free(vec_get(nlist, k), map->do_gc);
+		}
+		vec_free(nlist);
+	}
+	free(map->nodes);
+	free(map);
+}
+
+#endif // _SIMPLE_HASHMAP_IMPLEMENTATION
 
 #endif // _SIMPLE_
