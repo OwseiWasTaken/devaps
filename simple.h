@@ -12,28 +12,28 @@
 // vector
 
 typedef struct {
-	int head; // amount of items stored
-	int size; // cap of items
+	size_t head; // amount of items stored
+	size_t size; // cap of items
 	void **data; // sizeof(data) = size*sizeof(void*)
 } vector;
 
-vector *vec_make(int preloc_size, int used_size, void *data);
+vector *vec_make(size_t preloc_size, size_t used_size, void *data);
 void vec_free(vector *vec);
 int vec_push(vector *vec, void *data);
-int vec_set(vector *vec, void *data, int index);
+int vec_set(vector *vec, void *data, size_t index);
 void *vec_pop(vector *vec);
 void *vec_tail(vector *vec);
 void *vec_head(vector *vec);
-void *vec_get(vector *vec, int index);
+void *vec_get(vector *vec, size_t index);
 int _vec_double(vector *vec);
-int _vec_sethead(vector *vec, int newhead);
+int _vec_sethead(vector *vec, size_t newhead);
 
 // *vec_free doesn't free() bytes inside **data
 #ifdef _SIMPLE_VECTOR_IMPLEMENTATION
 #include <errno.h>
 #include <stdlib.h>
 #include <assert.h>
-vector *vec_make(int preloc_size, int used_size, void *data) {
+vector *vec_make(size_t preloc_size, size_t used_size, void *data) {
 	if (preloc_size == 0) {
 		assert(data == NULL); // can't init vector with data and size = 0
 		preloc_size = 1;
@@ -72,7 +72,7 @@ int vec_push(vector *vec, void *data) {
 	return 0;
 }
 
-int _vec_sethead(vector *vec, int newhead) {
+int _vec_sethead(vector *vec, size_t newhead) {
 	while (newhead >= vec->size) {
 		if (_vec_double(vec)) {
 			return -1;
@@ -83,7 +83,7 @@ int _vec_sethead(vector *vec, int newhead) {
 }
 
 // sets head to be index+1
-int vec_set(vector *vec, void *data, int index) {
+int vec_set(vector *vec, void *data, size_t index) {
 	while (index >= vec->size) {
 		if (_vec_double(vec)) {
 			return -1;
@@ -94,7 +94,7 @@ int vec_set(vector *vec, void *data, int index) {
 	return 0;
 }
 
-void *vec_get(vector *vec, int index) {
+void *vec_get(vector *vec, size_t index) {
 	if (index > vec->size) {
 		errno = ERANGE;
 		return NULL;
@@ -159,7 +159,7 @@ unsigned int FNVStringHash(char* str) {
 unsigned int FNVHash(const char *blob, size_t blobsize) {
 	unsigned int hash = 0;
 
-	for (int i = 0; i < blobsize; i++) {
+	for (size_t i = 0; i < blobsize; i++) {
 		hash *= FNV_PRIME;
 		hash ^= blob[i];
 	}
@@ -484,7 +484,6 @@ vector/*<*_hashnode>*/ *__map_get_nlist(hashmap *map, char *keyblob, size_t blob
 
 int map_add(hashmap *map, char *keyblob, size_t blobsize, void *obj) {
 	struct _hashnode *hnode = hashnode_box(keyblob, blobsize, obj);
-	size_t hash = __hash(map, keyblob, blobsize);
 	if (hnode == NULL) {return -1;}
 	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
 #ifdef NDEBUG
@@ -498,7 +497,6 @@ int map_add(hashmap *map, char *keyblob, size_t blobsize, void *obj) {
 }
 
 void *map_search(hashmap *map, char *keyblob, size_t blobsize) {
-	size_t hash = __hash(map, keyblob, blobsize);
 	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
 
 	for (size_t i = 0; i < nlist->head; i++) {
@@ -524,7 +522,6 @@ void hashnode_free(struct _hashnode *hnode, int do_gc) {
 }
 
 int map_remove(hashmap *map, char *keyblob, size_t blobsize) {
-	size_t hash = __hash(map, keyblob, blobsize);
 	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
 
 	int found = 0;
@@ -548,7 +545,7 @@ int map_remove(hashmap *map, char *keyblob, size_t blobsize) {
 
 char *bstr(char *blob, size_t size) {
 	char *text = malloc(size*5-1);
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		snprintf(text+(i*5), 6, "%03hhu, ", blob[i]);
 	}
 	text[size*5-2] = '\0';
@@ -559,7 +556,7 @@ void map_print(hashmap *map) {
 	for (size_t i = 0; i < map->size; i++) {
 		vector *nlist = map->nodes[i];
 		if (!nlist->head) { continue; }
-		printf("vec_%ld [%d] {\n", i, nlist->head);
+		printf("vec_%ld [%ld] {\n", i, nlist->head);
 		for (size_t k = 0; k < nlist->head; k++) {
 			struct _hashnode *hnode = nlist->data[k];
 			char *t1 = bstr(hnode->keyblob, hnode->blobsize);
@@ -585,7 +582,7 @@ void map_printf(hashmap *map,
 			printf("vec_%ld [0] {}\n", i);
 			continue;
 		}
-		printf("vec_%ld [%d] {\n", i, nlist->head);
+		printf("vec_%ld [%ld] {\n", i, nlist->head);
 		for (size_t k = 0; k < nlist->head; k++) {
 			struct _hashnode *hnode = nlist->data[k];
 			char *kstr = ktostr(hnode->keyblob, hnode->blobsize);
