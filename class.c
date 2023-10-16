@@ -1,33 +1,85 @@
+
+/*
+tring out mutexes
 #include <stdio.h>
-#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <stdlib.h>
-#define _SIMPLE_FNVHASH_IMPLEMENTATION
-#define _SIMPLE_HASHMAP_IMPLEMENTATION
+#include <wait.h>
+
+#define _SIMPLE_MUTEX_IMPLEMENTATION
 #include "simple.h"
 
+int main() {
+	futex_t *shared = mmap(
+		NULL, sizeof(futex_t) * 3,
+		PROT_READ | PROT_WRITE,
+		MAP_ANONYMOUS | MAP_SHARED,
+	-1, 0);
+
+	if (shared == MAP_FAILED) {
+		perror("failed to allocate shared memory\n");
+		exit(EXIT_FAILURE);
+	}
+
+	futex_t *f1 = &shared[0];
+	futex_t *f2 = &shared[1];
+	uint32_t *ccounter = &shared[2];
+	*f1 = 0; // unlocked
+	*f2 = 1; // locked
+	*ccounter = 0; // multi-thread
+	int count = 10; // thread specific
+
+	pid_t child_pid = fork();
+	if (child_pid) { // parrent
+		for (int i = 0; i<count; i++) {
+			flock(f1);
+			(*ccounter)++;
+			printf("[#####] %d::%d {%d, %d}\n", i, *ccounter, *f1, *f2);
+			funlock(f2);
+		}
+	} else { // child
+		for (int i = 0; i<count; i++) {
+			flock(f2);
+			(*ccounter)++;
+			printf("[     ] %d::%d {%d, %d}\n", i, *ccounter, *f1, *f2);
+			funlock(f1);
+		}
+	}
+	wait(NULL);
+}
+*/
+
+// class-like vtable to enable methods in structs
+
+#include <stdlib.h>
+#include <string.h>
+#define _SIMPLE_HASHMAP_IMPLEMENTATION
+#define _SIMPLE_FNVHASH_IMPLEMENTATION
+#include "simple.h"
 #define fstr(str) str, strlen(str)
 
 typedef struct {
 	hashmap *vmap;
 } callable;
 
+
 void *call(void *struc, char *func) {
 	hashmap *vmap = ((callable*) struc)->vmap;
-	f = map_search(vmap, fstr(func));
-	void *(method)(void *struc) = void *(f)(void *struc);
-	return method(struc);
+	void *(*method)(void *struc) = map_search(vmap, fstr(func));
+	if (method == NULL) {
+		printf("method \"%s\" doesn't exist in such struct\n", func);
+		return NULL;
+	} else {
+		return method(struc);
+	}
 }
 
 typedef struct {
 	hashmap *_vtable;
 	int age;
+	int id;
 } person;
-
-void *print_age(void *struc) {
-	person *p = (person *)struc;
-	printf("%d\n", p->age);
-	return NULL;
-}
 
 hashmap *people_vtable;
 person *make_person() {
@@ -40,14 +92,33 @@ size_t fnv_wrapper(char *keyblob, size_t blobsize) {
 	return FNVHash(keyblob, blobsize);
 }
 
+void print_age(person *p) {
+	printf("person[%d] is a %dyo\n", p->id, p->age);
+}
 
 int main() {
 	people_vtable = map_make(4, 0, fnv_wrapper);
-	map_add(people_vtable, fstr("print-table"), print_age);
-	person *p = make_person();
-	p->age = 20;
-	call(p, "print_table");
+	map_add(people_vtable, fstr("print_person1"), (void*)print_age);
+	map_add(people_vtable, fstr("print_person2"), (void*)print_age);
+	map_add(people_vtable, fstr("print_person3"), (void*)print_age);
+	map_add(people_vtable, fstr("print_person4"), (void*)print_age);
+	map_add(people_vtable, fstr("print_person5"), (void*)print_age);
+
+	person *p1 = make_person();
+	person *p2 = make_person();
+
+	p1->age = 10;
+	p1->id = 1;
+	p2->age = 20;
+	p2->id = 2;
+	// p1.print_table() -> call(p1, "print");
+	call(p1, "print_person1");
+	call(p1, "print_person2");
+	call(p1, "print_person3");
+	call(p1, "print_person4");
+	call(p1, "print_person5");
 
 	map_free(people_vtable);
-	free(p);
+	free(p1);
+	free(p2);
 }

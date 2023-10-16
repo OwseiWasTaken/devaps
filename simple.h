@@ -1,21 +1,27 @@
 #ifndef _SIMPLE_
 #define _SIMPLE_
 
-#include <string.h>
-#define fats(str) str, strlen(str)
-
 #ifdef _SIMPLE_HASHMAP_IMPLEMENTATION
 #define _SIMPLE_VECTOR_IMPLEMENTATION
 #endif
 
+#ifndef reallocarray
+#include <assert.h>
+void *reallocarray(void *olddata, size_t itemsize, size_t itemcount) {
+	assert((itemsize&itemcount) == 0 || (itemsize * itemcount) / itemsize == itemcount);
+	return realloc(olddata, itemsize * itemcount);
+}
+#endif
+
+#ifndef vector
 #include <sys/types.h>
-// vector
 
 typedef struct {
 	size_t head; // amount of items stored
 	size_t size; // cap of items
 	void **data; // sizeof(data) = size*sizeof(void*)
 } vector;
+#endif // vector def
 
 vector *vec_make(size_t preloc_size, size_t used_size, void *data);
 void vec_free(vector *vec);
@@ -38,13 +44,6 @@ int _vec_sethead(vector *vec, size_t newhead);
 //#endif
 
 #include <assert.h>
-
-#ifndef reallocarray
-void *reallocarray(void *olddata, size_t itemsize, size_t itemcount) {
-	assert((itemsize&itemcount) == 0 || (itemsize * itemcount) / itemsize == itemcount);
-	return realloc(olddata, itemsize * itemcount);
-}
-#endif
 
 vector *vec_make(size_t preloc_size, size_t used_size, void *data) {
 	if (preloc_size == 0) {
@@ -183,6 +182,7 @@ unsigned int FNVHash(const char *blob, size_t blobsize) {
 
 // doubly linked list
 
+#ifndef dlist
 struct _dnode {
 	struct _dnode *prev;
 	struct _dnode *next;
@@ -195,6 +195,7 @@ typedef struct {
 	size_t len;
 	int do_gc;
 } dlist;
+#endif
 
 dlist *dlist_make(int collect_garbage);
 void dlist_free(dlist *dlj);
@@ -390,7 +391,7 @@ int dlist_set(dlist *dl, size_t index, void *obj) {
 		errno = ERANGE;
 		return -1;
 	}
-	struct _dnode *nd =  dlist_get_node(dl, index);
+	struct _dnode *nd =	dlist_get_node(dl, index);
 	if (nd == NULL) {return -1;}
 
 	if (dl->do_gc) {
@@ -402,13 +403,11 @@ int dlist_set(dlist *dl, size_t index, void *obj) {
 }
 
 int dlist_remove(dlist *dl, size_t index) {
-	printf("len: %ld, index: %lu\n", dl->len, index);
-
 	if (dl->len == 0 || index >= dl->len) {
 		errno = ERANGE;
 		return -1;
 	}
-	struct _dnode *removed =  dlist_get_node(dl, index);
+	struct _dnode *removed =	dlist_get_node(dl, index);
 	struct _dnode *prev = removed->prev;
 	struct _dnode *next = removed->next;
 	if (prev != NULL && next != NULL) {
@@ -513,8 +512,7 @@ void *map_search(hashmap *map, char *keyblob, size_t blobsize) {
 	vector *nlist = __map_get_nlist(map, keyblob, blobsize);
 
 	for (size_t i = 0; i < nlist->head; i++) {
-		// direct access for easier multi-thread implementation
-		struct _hashnode *hnode = nlist->data[i];
+		struct _hashnode *hnode = vec_get(nlist, i);
 		if (hnode->blobsize != blobsize) {continue;}
 		if (!memcmp(keyblob, hnode->keyblob, blobsize)) {
 			return hnode->obj;
@@ -539,9 +537,8 @@ int map_remove(hashmap *map, char *keyblob, size_t blobsize) {
 
 	int found = 0;
 	for (size_t i = 0; i < nlist->head; i++) {
-		// direct access for easier multi-thread implementation
 		if (!found) {
-			struct _hashnode *hnode = nlist->data[i];
+			struct _hashnode *hnode = vec_get(nlist, i);
 			if (hnode->blobsize != blobsize) {continue;}
 			if (!memcmp(keyblob, hnode->keyblob, blobsize)) {
 				found = 1;
@@ -625,5 +622,34 @@ void map_free(hashmap *map) {
 }
 
 #endif // _SIMPLE_HASHMAP_IMPLEMENTATION
+
+#ifndef futex_t
+	#include <stdint.h>
+	typedef uint32_t futex_t;
+#else
+	#ifdef _SIMPLE_MUTEX_IMPLEMENTATION
+		#error "futex_t already defined, _SIMPLE_ can't define it AND utilize default implementation"
+	#endif
+#endif // futex_t
+
+// i hate this
+#ifdef _SIMPLE_MUTEX_IMPLEMENTATION
+int flock(futex_t *ftx) {
+	// GOD I HATE THIS
+	int _;
+	while (*ftx){
+		// set time to sleep on
+		_++;
+	};
+	*ftx=1;
+	return 0;
+}
+
+#include <assert.h>
+int funlock(futex_t *ftx) {
+	*ftx=0;
+	return 0;
+}
+#endif
 
 #endif // _SIMPLE_
