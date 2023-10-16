@@ -31,8 +31,21 @@ int _vec_sethead(vector *vec, size_t newhead);
 // *vec_free doesn't free() bytes inside **data
 #ifdef _SIMPLE_VECTOR_IMPLEMENTATION
 #include <errno.h>
-#include <stdlib.h>
+#include <malloc.h>
+
+//#ifdef reallocarray
+//#undef reallocarray
+//#endif
+
 #include <assert.h>
+
+#ifndef reallocarray
+void *reallocarray(void *olddata, size_t itemsize, size_t itemcount) {
+	assert((itemsize&itemcount) == 0 || (itemsize * itemcount) / itemsize == itemcount);
+	return realloc(olddata, itemsize * itemcount);
+}
+#endif
+
 vector *vec_make(size_t preloc_size, size_t used_size, void *data) {
 	if (preloc_size == 0) {
 		assert(data == NULL); // can't init vector with data and size = 0
@@ -202,7 +215,7 @@ int dlist_remove(dlist *dl, size_t index); // [index-1].next = [index+1]
 
 #ifdef _SIMPLE_DLIST_IMPLEMENTATION
 #include <errno.h>
-#include <stdlib.h>
+#include <malloc.h>
 dlist *dlist_make(int collect_garbage) {
 	dlist *dl = malloc(sizeof(dlist));
 	if (dl != NULL) {
