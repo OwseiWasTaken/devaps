@@ -92,17 +92,17 @@ size_t fnv_wrapper(char *keyblob, size_t blobsize) {
 	return FNVHash(keyblob, blobsize);
 }
 
-void print_age(person *p) {
+void person_print(person *p) {
 	printf("person[%d] is a %dyo\n", p->id, p->age);
+}
+void person_age(person *p) {
+	p->age++;
 }
 
 int main() {
 	people_vtable = map_make(4, 0, fnv_wrapper);
-	map_add(people_vtable, fstr("print_person1"), (void*)print_age);
-	map_add(people_vtable, fstr("print_person2"), (void*)print_age);
-	map_add(people_vtable, fstr("print_person3"), (void*)print_age);
-	map_add(people_vtable, fstr("print_person4"), (void*)print_age);
-	map_add(people_vtable, fstr("print_person5"), (void*)print_age);
+	map_add(people_vtable, fstr("print"), (void*)person_print);
+	map_add(people_vtable, fstr("age"), (void*)person_age);
 
 	person *p1 = make_person();
 	person *p2 = make_person();
@@ -112,11 +112,9 @@ int main() {
 	p2->age = 20;
 	p2->id = 2;
 	// p1.print_table() -> call(p1, "print");
-	call(p1, "print_person1");
-	call(p1, "print_person2");
-	call(p1, "print_person3");
-	call(p1, "print_person4");
-	call(p1, "print_person5");
+	call(p1, "print");
+	call(p1, "age");
+	call(p1, "print");
 
 	map_free(people_vtable);
 	free(p1);
