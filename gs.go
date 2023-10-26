@@ -27,8 +27,8 @@ var (
 		{"working tree clean"           , 'ü', "0;32"},
 		{"Untracked files"              , '+', "0;31"},
 		{"Changes to be committed"      , '→', "0;31"},
-		{"Your branch is ahead"         , '↑', "0;34"},
-		{"behind"                       , '↓', "1;91"},
+		{"Your branch is ahead"         , '↑', "5;34"},
+		{"behind"                       , '↓', "5;91"},
 		{"Changes not staged for commit", '*', "0;31"},
 	}
 )
