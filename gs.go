@@ -48,5 +48,5 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\x1b[0;35m%s %s\x1b[0m", branchname, icons)
+	fmt.Printf("\x1b[1;95m%s %s\x1b[0m", branchname, icons)
 }
