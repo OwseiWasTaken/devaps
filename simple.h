@@ -27,6 +27,8 @@ vector *vec_make(size_t preloc_size, size_t used_size, void *data);
 void vec_free(vector *vec);
 int vec_push(vector *vec, void *data);
 int vec_set(vector *vec, void *data, size_t index);
+int vec_size(vector *vec);
+int vec_cap(vector *vec);
 void *vec_pop(vector *vec);
 void *vec_tail(vector *vec);
 void *vec_head(vector *vec);
@@ -82,6 +84,13 @@ int vec_push(vector *vec, void *data) {
 	vec->data[vec->head] = data;
 	vec->head++;
 	return 0;
+}
+
+int vec_size(vector *vec) {
+	return vec->head-1;
+}
+int vec_cap(vector *vec) {
+	return vec->size;
 }
 
 int _vec_sethead(vector *vec, size_t newhead) {
