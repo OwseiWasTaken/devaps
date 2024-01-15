@@ -137,6 +137,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s <file.350N>\n", os.Args[0])
 		os.Exit(1)
 	}
+
+	// open and read file
 	var FileName = os.Args[1]
 	file, err := os.Open(FileName)
 	if (err != nil) { panic(err) }
@@ -144,6 +146,7 @@ func main() {
 	content, err := io.ReadAll(file)
 	if (err != nil) { panic(err) }
 
+	// make 350N reader with file content
 	var FileStream = ReadStream{
 		content, len(content),
 		T350N_Readers,
