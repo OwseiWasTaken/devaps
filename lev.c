@@ -2,82 +2,70 @@
 #include <malloc.h>
 #include <string.h>
 
-#define GREEN "\x1b[1;32m"
-#define RED "\x1b[1;31m"
-#define RESET "\x1b[0m"
-
 int trip(const int *mat, const int y, const int x, const int colcount) {
-	const int a = mat[(y-1)*colcount+x];
-	const int b = mat[y*colcount+(x-1)];
-	const int c = mat[(y-1)*colcount+(x-1)];
+	const int /*top*/a = mat[(y-1)*colcount+x]; // delete
+	const int /*left*/b = mat[y*colcount+(x-1)]; // insert
+	const int /*top left*/c = mat[(y-1)*colcount+(x-1)]; // sub
 	const int ab = (a<b)?a:b;
 	return (ab<c)?ab:c;
 }
 
-void bmove(const int *mat, const int colcount, int *imin) {
-	*imin = 0;
-	for (int y = 0; y<colcount; y++) {
-		if (mat[*imin] >= mat[y]) *imin=y;
-	}
-}
-
-// actually implements wager-fisher edit distance but calling a tool "lev" is
-// better than anything I came up with the words "wager fisher"
-int main(int argc, char **argv) {
-	int debug = 0;
-	if (argc == 4) {
-		debug = 1;
-	} else {
-		if (argc != 3) {
-			fprintf(stderr, "Usage: %s [--debug] 'source' 'compare'\n", argv[0]);
-			return 1;
-		}
-	}
-
-	const char *w1 = argv[debug+1];
-	const char *w2 = argv[debug+2];
-	const int colcount = strlen(w1)+1;
-	const int rowcount = strlen(w2)+1;
-	int *mat = malloc(colcount*rowcount*sizeof(*mat));
-
+int wagfish(
+	const int colcount, // strlen(w1)
+	const int rowcount, // strlen(w2)
+	const int matcolcount, // col count of matrix
+	const int matrowcount, // row count of matrix
+	int mat[matrowcount*matcolcount], // matrix
+	const char *w1, const char *w2 // w1, w2
+) {
 	mat[0] = 0;
 
 	for (int y = 0;y<rowcount;y++) {
 		for (int x = 0;x<colcount; x++) {
 			if (y && !x) {
-				mat[y*colcount] = y;
+				mat[y*matcolcount] = y;
 			} else if (x && !y) {
 				mat[x] = x;
 			} else if (y && x) {;
-				mat[y*colcount+x] = trip(mat, y, x, colcount)+(w2[y-1]!=w1[x-1]);
+				mat[y*matcolcount+x] = trip(mat, y, x, colcount)+(w2[y-1]!=w1[x-1]);
 			}
 		}
 	}
+	return mat[(rowcount-1)*matcolcount+colcount-1];
+}
 
-	if (!debug) {
-		printf("%d\n", mat[(rowcount-1)*colcount+colcount-1]);
-		return 0;
+// actually implements Wagner–Fischer edit distance but calling a tool "lev" is
+// better than anything I can come up with using the words "Wagner" & "Fischer"
+int main(int argc, char **argv) {
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s 'source' ['compare' ...]\n", argv[0]);
+		return 1;
 	}
 
-	printf("W-F");
-	for (int x = 0;x<colcount;x++) {
-		printf("[%c]", (!x)?'_':w1[x-1]);
-	}
-	printf("\n");
-	for (int y = 0;y<rowcount;y++) {
-		printf("[%c]", (!y)?'_':w2[y-1]);
-		int index;
-		bmove(&(mat[colcount*y]), colcount, &index);
-		for (int x = 0;x<colcount; x++) {
-			if (x == index) {
-				printf("[%s%d%s]", GREEN, mat[y*colcount+x], RESET);
-			} else {
-				printf("[%d]", mat[y*colcount+x]);
-			}
+	const char *target = argv[1];
+	const int colcount = strlen(target)+1;
+	const int matcolcount = colcount;
+
+	int lens[argc-2];
+	int matrowcount = 0;
+
+	for (int i = 2; i < argc; i++) {
+		lens[i] = strlen(argv[i])+1;
+		if (lens[i] > matrowcount) {
+			matrowcount=lens[i];
 		}
-		printf("\n");
 	}
-	printf("lev: %d\n", mat[(rowcount-1)*colcount+colcount-1]);
+
+	int *mat = malloc(matcolcount*matrowcount*sizeof(*mat));
+
+	for (int i = 2; i < argc; i++) {
+		const char *w2 = argv[i];
+		const int rowcount = lens[i];
+		int lev = wagfish(colcount, rowcount, matcolcount, matrowcount, mat, target, w2);
+		printf("%d %s\n", lev, w2);
+	}
+
+	free(mat);
 	return 0;
 }
 
