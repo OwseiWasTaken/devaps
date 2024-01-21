@@ -35,8 +35,6 @@ func (Dir Dir) Mut(out Out) (Out) {
 
 const RESET = "\x1b[0m"
 
-//TODO make map["\c"+colorName]ANSIColorCode
-
 func main() {
 	cwd, err := os.Getwd()
 	if (err != nil) {panic(err)}
