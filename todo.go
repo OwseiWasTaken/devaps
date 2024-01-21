@@ -1,0 +1,130 @@
+package main
+
+import (
+	"os"
+	"io"
+	"fmt"
+	"strings"
+	"regexp"
+)
+
+type Finder struct {
+	canPrefix, canSuffix bool
+	ext string
+	finder *regexp.Regexp
+}
+
+func (F Finder) Match(line string) (ColOff, ColSpan int, Found bool) {
+	loc := F.finder.FindStringIndex(line)
+	if (loc == nil) {return 0, 0, false}
+	return loc[0], loc[1], true
+}
+
+func (F Finder) Should(filename string) bool {
+	if (F.canPrefix && F.canSuffix) {
+		return strings.Contains(filename, F.ext)
+	}
+	if (F.canPrefix) {
+		return strings.HasSuffix(filename, F.ext)
+	}
+	if (F.canSuffix) {
+		return strings.HasPrefix(filename, F.ext)
+	}
+	return filename==F.ext
+}
+
+var HL = "\x1b[31m"
+var RESET = "\x1b[0m"
+
+func HLLine(s string, off, span int) string {
+	return s[:off]+HL+s[off:span]+RESET+s[span:]
+}
+
+type Todo struct {
+	LineOff, ColOff int
+	filename string
+	Line string
+}
+
+func ReadAll(filename string) (string, error) {
+	file, err := os.Open(filename)
+	if (err != nil) {return "", err}
+	cont, err := io.ReadAll(file)
+	if (err != nil) {return "", err}
+	return string(cont), nil
+}
+// find TODO finders
+var finderFinder = regexp.MustCompile(`(\*)?(\S+?)(\*)?\t+(.*)`)
+
+func main() {
+	var HOME = os.Getenv("HOME")
+	config, err := ReadAll(HOME+"/.config/todos")
+	if (err != nil) {
+		fmt.Fprintf(os.Stderr, "No such file $HOME/.config/todos; finders must be placed there\n")
+		os.Exit(1)
+	}
+
+	var finders = []Finder{}
+
+	lines := strings.Split(config, "\n")
+	for _, line := range lines {
+		var info = finderFinder.FindStringSubmatch(line)
+		if len(info) == 5 {
+			rgx, err := regexp.Compile(info[4])
+			if (err!=nil) {
+				fmt.Fprintf(os.Stderr, "Could not compile regex %q\n", info[4])
+				fmt.Fprintf(os.Stderr, "Proceeding normally\n")
+			} else {
+				finders = append(finders, Finder{
+					info[1]=="*",
+					info[3]=="*",
+					info[2],
+					rgx,
+				})
+			}
+		} //TODO else and len() != 0
+	}
+
+	files := os.Args[1:]
+	//TODO could use finderID instead of *Finder
+	// and turn map[*Finder]... into []...
+	var finds = make(map[*Finder][][]Todo)
+	for i := range finders {
+		flstd := make([][]Todo, len(files))
+		for j := range flstd {
+			flstd[j] = []Todo{}
+		}
+		finds[&finders[i]] = flstd
+	}
+
+	for flID, filename := range files {
+		cont, e := ReadAll(filename)
+		if (e!=nil) {panic(e)}
+		lines := strings.Split(cont, "\n")
+		thisfinders := []Finder{}
+		for _, finder := range finders {
+			if (finder.Should(filename)) {
+				thisfinders = append(thisfinders, finder)
+			}
+		}
+
+		for LineOff, line := range lines {
+			for fID, finder := range thisfinders {
+				colof, colspan, found := finder.Match(line)
+				if (!found) {continue}
+				fmt.Printf("%v[%p] -> %v\n", finds, &finders[fID], finds[&finders[fID]])
+				fmt.Println( HLLine(line, colof, colspan))
+				finds[&finders[fID]][flID] = append(
+					finds[&finder][flID],
+					Todo{
+						LineOff, colof, filename,
+						HLLine(line, colof, colspan),
+					},
+				)
+			}
+
+		}
+	}
+
+	fmt.Println(finds)
+}
