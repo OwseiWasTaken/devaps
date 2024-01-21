@@ -33,11 +33,15 @@ func (F Finder) Should(filename string) bool {
 	return filename==F.ext
 }
 
-var HL = "\x1b[31m"
-var RESET = "\x1b[0m"
+const (
+	LINE_HL = "\x1b[91m"
+	RESET = "\x1b[0m"
+	POS_HL = "\x1b[92m"
+	FILE_HL = "\x1b[95m"
+)
 
 func HLLine(s string, off, span int) string {
-	return strings.TrimSpace(s[:off]+HL+s[off:span]+RESET+s[span:])
+	return strings.TrimSpace(s[:off]+LINE_HL+s[off:span]+RESET+s[span:])
 }
 
 func ReadAll(filename string) (string, error) {
@@ -96,9 +100,8 @@ func main() {
 			for _, finder := range thisfinders {
 				colof, colspan, found := finder.Match(line)
 				if (!found) {continue}
-				fmt.Printf("%s:%d:%d: \"%s\"\n", filename, LineOff+1, colof, HLLine(line, colof, colspan))
+				fmt.Printf(FILE_HL+"%s"+RESET+":"+POS_HL+"%d:%d"+RESET+": \"%s\"\n", filename, LineOff+1, colof, HLLine(line, colof, colspan))
 			}
-
 		}
 	}
 }

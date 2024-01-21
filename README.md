@@ -2,33 +2,32 @@
 
 ## Apps for my everyday coding :)
 
-<!-- TODO: remake todos.go (maybe even in c) so it doesn't use gc.py -->
 ## todos.go
 TODOs finder in go
 
-<!-- it should read directories -->
-usage: todos src/*.go
+todos.go depends on $HOME/.config/todos
 
+schema for the todo finder is
+[*]string[*] (tab) (regex)
+the prefix and suffix asteriscs say if the pattern
+can have any string before of after the specified string
 
-```go
-file.go:
-// will create a TODO with 3° severity, named "test" with the description "desc"
-//TODO(3) test: desc
-// will create a TODO with 8° (default) severity, named "test" with the descrition "desc"
-//TODO test2: desc
-// will create a TODO with 8° (default) severity, named "desc" with no description
-//TODO: desc3
+the pattern is then mathed on the file's name
+**all** patterns that match will have the regex expression mathed on them
+
+```
+*.go		//\s*TODO.*
+*.c			//\s*TODO.*
+*.h			//\s*TODO.*
+*.hpp		//\s*TODO.*
+*.cpp		//\s*TODO.*
+*.py		#\s*TODO.*
+*.html	<!--.*-->
+README.md	<!--.*-->
+*.gohtml*	<!--.*-->
 ```
 
-```shell
-$ todos file.go
-todos.go:
-	3@2: test
-	8@4: test2
-	8@6: desc3
-```
-
-as you can see, todos.go doesn't print descriptions _yet_
+todos.go _will_ have an update where regex can be multi-line
 
 ## timer.c
 timer scheduler in c
@@ -52,32 +51,28 @@ $ timer "10 a b" "5 c" 3
 3: timer: 3.000
 ```
 
-<!-- TODO: make ctc again -->
-
 ## ctc.c
 character to code / code to character converter
-it will convert codes/chars chars/codes as per the ASCII table.<br>
+it will convert codes/chars chars/codes as per your string->byte table, generally ASCII.
 you can convert a string of chars by writing all of them together
 and you can convert a string of codes by separating them with any of the ':', ',', ' ', '\n' delimiters
 
-there's a -1 flag for piping, it transforms the output into easly readable text
+there's a -1 flag for piping, it transforms the output into easly parsable text
 
 ```shell
-$ctc "hello\n"
+$ctc "hello"
 h:104
 e:101
 l:108
 l:108
 o:111
-\n:10
 
-$ctc -1 "hello\n"
+$ctc -1 "hello"
 104
 101
 108
 108
 111
-10
 
 $ ctc 104 101 108 108 111 10
 104:h
@@ -86,7 +81,6 @@ $ ctc 104 101 108 108 111 10
 108:l
 111:o
 10:\n
-
 
 $ ctc -1 104 101 108 108 111 10
 hello
@@ -102,15 +96,20 @@ l:108
 o:111
 ```
 
-you can even pipe the output from ctc to ctc, to revet the changes
+you can even pipe the output from ctc to ctc (using the pipe flag), to revet the changes
 ```shell
 $ echo "hello" | ctc -1 | ctc -1
 hello
 ```
-## hottie.c
-hot reloader in C
 
-usage: hottie \<command\> file[s]
+## fpwd.go
 
-this will execute _command_ everytime any of the files are modified.
-if the process created by _command_ doesn't halt before another modification is made, SIGTERM is sent to it
+fpwd.go is the new version of spwd
+and spwd was the configurable version of pwd
+
+fpwd uses, but doesn't depend on, ~/.config/fpwd
+
+fpwd's schema for config file is:
+(old pwd) (new pwd) [prefix]
+
+fpwd replaces any "\e" in prefix to \x1b, that is normally used for escape sequences.
