@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -55,7 +53,7 @@ int main(int argc, char *argv[]) {
 				printf("%d: %s: completed!\n", i, timers[i].label);
 			} else {
 				still_awaiting = 1;
-				printf("%d: %s: %Lf\n", i, timers[i].label, timers[i].total-tspan);
+				printf("%d: %s: %.4Lf\n", i, timers[i].label, timers[i].total-tspan);
 			}
 		}
 		puts(cursor_reset);
