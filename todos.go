@@ -1,233 +1,104 @@
 package main
 
-include "gutil"
-
 import (
-	"sort"
+	"os"
+	"io"
+	"fmt"
+	"strings"
+	"regexp"
 )
 
-const DEFAULTRANK = 8
-
-var (
-	comment = map[string]string {
-		"py" :"#",
-		"go" :"//",
-		"c"  :"//",
-		"h"  :"//",
-		"cpp":"//",
-		"hpp":"//",
-		"ino":"//",
-		"lua":"--",
-		// owseiwastaken/dt
-		"clrs":"#",
-	}
-	rankcolor = map[int]string {
-		1:RGB(255,0,0),
-		2:RGB(250,100,100),
-		3:RGB(250,80,10),
-		4:RGB(100,200,100),
-		5:RGB(0,255,0),
-		6:RGB(40,150,180),
-		7:RGB(100,100,255),
-	}
-	nodesc = RGB(140,140,140)+"No Description"+RGB(255,255,255)
-)
-
-type Todo struct {
-	from string
-	at int
-	rank int
-	name string
-	desc string
+type Finder struct {
+	canPrefix, canSuffix bool
+	ext string
+	finder *regexp.Regexp
 }
 
-var (
-	TABSIZE = 2
-	TAB = strings.Repeat(" ", TABSIZE)
-	AT = RGB(100,100,255)+"@"+RGB(255,255,255)
-	trim = []string{
-		" ", "\t",
-	}
-)
-
-type Pair struct {
-	line string
-	at int
+func (F Finder) Match(line string) (ColOff, ColSpan int, Found bool) {
+	loc := F.finder.FindStringIndex(line)
+	if (loc == nil) {return 0, 0, false}
+	return loc[0], loc[1], true
 }
 
-func (T Todo) str () (string) {
-	return spf(TAB+"%s%d"+AT+"%d: %s", rankcolor[T.rank], T.rank, T.at, T.name)
+func (F Finder) Should(filename string) bool {
+	if (F.canPrefix && F.canSuffix) {
+		return strings.Contains(filename, F.ext)
+	}
+	if (F.canPrefix) {
+		return strings.HasSuffix(filename, F.ext)
+	}
+	if (F.canSuffix) {
+		return strings.HasPrefix(filename, F.ext)
+	}
+	return filename==F.ext
 }
 
-func dotrim ( line string ) (string) {
-	for j:=0;j<len(trim);j++ {
-		line = strings.Trim(line, trim[j])
-	}
-	return line
+var HL = "\x1b[31m"
+var RESET = "\x1b[0m"
+
+func HLLine(s string, off, span int) string {
+	return strings.TrimSpace(s[:off]+HL+s[off:span]+RESET+s[span:])
 }
 
-func DoFile ( filename string ) {
-	var (
-		tmp []string
-		file = []Pair{}
-		cmnt string
-		TODOS = []Todo{}
-	)
+func ReadAll(filename string) (string, error) {
+	file, err := os.Open(filename)
+	if (err != nil) {return "", err}
+	cont, err := io.ReadAll(file)
+	if (err != nil) {return "", err}
+	return string(cont), nil
+}
+// find TODO finders
+var finderFinder = regexp.MustCompile(`(\*)?(\S+?)(\*)?\t+(.*)`)
 
-	if !exists(filename) {
-		exit(2)
+func main() {
+	var HOME = os.Getenv("HOME")
+	config, err := ReadAll(HOME+"/.config/todos")
+	if (err != nil) {
+		fmt.Fprintf(os.Stderr, "No such file $HOME/.config/todos; finders must be placed there\n")
+		os.Exit(1)
 	}
 
-	tmp = strings.Split(filename,".")
-	cmnt = comment[tmp[len(tmp)-1]]
-	trim = append(trim, cmnt)
-	trim = append(trim, "TODO")
+	var finders = []Finder{}
 
-
-	tmp = strings.Split(ReadFile(filename), "\n")
-	for i:=0;i<len(tmp);i++ {
-		if strings.Contains(tmp[i], cmnt+"TODO") {
-			//trim and append
-			file = append(file, Pair{dotrim(tmp[i]), i+1})
-		}
-	}
-
-	var (
-		rank = 0
-		name string
-		desc string
-
-		stmp string
-		itmp int
-		line string
-		err error
-		j int
-	)
-
-	for i:=0;i<len(file);i++ {
-		//reset vars
-		rank = 0
-		name = ""
-		desc = ""
-
-		line = dotrim(file[i].line)
-
-		if !strings.Contains(line, ":") {
-			continue
-		}
-
-		if line[0] == '('{
-			stmp = line[1:]
-			for j=0;j<len(stmp);j++ {
-				if stmp[j] == ')'{break}
-				itmp, err = strconv.Atoi(string(stmp[j]))
-				if err != nil {break}
-				rank = (rank*10)+itmp
-			}
-			//+2 N)
-			line = line[j+2:]
-		} else {
-			rank = DEFAULTRANK
-		}
-
-		if line[0] == ':' {
-			desc = nodesc
-			name = line[1:]
-		} else {
-			tmp = strings.Split(line, ":")
-			name = tmp[0]
-			if len(tmp) == 2 {
-				desc = tmp[1]
+	lines := strings.Split(config, "\n")
+	for _, line := range lines {
+		var info = finderFinder.FindStringSubmatch(line)
+		if len(info) == 5 {
+			rgx, err := regexp.Compile(info[4])
+			if (err!=nil) {
+				fmt.Fprintf(os.Stderr, "Could not compile regex %q\n", info[4])
+				fmt.Fprintf(os.Stderr, "Proceeding normally\n")
 			} else {
-				desc = "missing description"
+				finders = append(finders, Finder{
+					info[1]=="*",
+					info[3]=="*",
+					info[2],
+					rgx,
+				})
 			}
-		}
-		if len(name) == 0 && len(desc) != 0 {
-			name = desc
-			desc = nodesc
-		}
-		if len(desc) == 0{
-			desc = nodesc
-		}
-		name = strings.Trim(name, " ")
-		desc = strings.Trim(desc, " ")
-
-		//printf(
-		//	"line:\"%s\"\ndesc:%s\nname:%s\nrank:%d\n\n",
-		//	line, desc, name, rank,
-		//)
-		TODOS = append(TODOS, Todo{
-			filename, file[i].at, rank, name, desc,
-		})
+		} //TODO else and len() != 0
 	}
 
+	files := os.Args[1:]
 
-
-	if len(TODOS) != 0 {
-		sort.Slice(TODOS, func(i, j int) bool {
-			return TODOS[i].rank < TODOS[j].rank
-		})
-		printf(filename+":\n")
-		for i:=0;i<len(TODOS);i++ {
-			printf(TODOS[i].str()+"\n")
-		}
-	} else {
-		if ShowNoTodo {
-			printf("%s: %sno TODOs%s\n", filename, RGB(0,255,0),RGB(255,255,255))
-		}
-	}
-
-}
-
-var (
-	ShowNoTodo = false
-	fl []string
-	t string
-)
-
-func GetFiles ( filename string ) ([]string) {
-	return strings.Split(ReadFile(filename), "\n")
-}
-
-func main(){
-	if argc == 0 {
-		if exists("./todos.txt") {
-			PS("Using ./todos.txt")
-			argv = []string{"./todos.txt"}
-			argc = 1
-		} else {
-			exit(1)
-		}
-	}
-	//TODO(3) test: test
-	//TODO(3) test: desc
-	//TODO test: desc
-	//TODO: desc
-
-	sort.Slice(argv, func(i, j int) bool {
-		return argv[i][0] == '-'
-		return j==0
-	})
-
-	for i:=0;i<argc;i++{
-		if argv[i][0] == '-' {
-			if (argv[i] == "-snt") || (argv[i] == "--snt") {
-				ShowNoTodo = true
+	for _, filename := range files {
+		cont, e := ReadAll(filename)
+		if (e!=nil) {panic(e)}
+		lines := strings.Split(cont, "\n")
+		thisfinders := []Finder{}
+		for _, finder := range finders {
+			if (finder.Should(filename)) {
+				thisfinders = append(thisfinders, finder)
 			}
-		} else {
-			if len(argv[i]) > 3 {
-				if argv[i][len(argv[i])-3:] == "txt" {
-					fl = GetFiles(argv[i])
-					for i:=0;i<len(fl);i++ {
-						t = fl[i]
-						// remove path
-						t = strings.Split(t, "/")[len(strings.Split(t, "/"))-1]
-						DoFile(t)
-					}
-				} else {
-					DoFile(argv[i])
-				}
+		}
+
+		for LineOff, line := range lines {
+			for _, finder := range thisfinders {
+				colof, colspan, found := finder.Match(line)
+				if (!found) {continue}
+				fmt.Printf("%s:%d:%d: \"%s\"\n", filename, LineOff+1, colof, HLLine(line, colof, colspan))
 			}
+
 		}
 	}
 }
