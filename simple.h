@@ -1,17 +1,27 @@
 #ifndef _SIMPLE_
 #define _SIMPLE_
 
+// find out len of __VA_ARGS__ with __VA_NARG__(__VA_ARGS__)
+#define __VA_NARG__(...) (__VA_NARG_(_0, ## __VA_ARGS__, __RSEQ_N()) - 1)
+#define __VA_NARG_(...) __VA_ARG_N(__VA_ARGS__)
+#define __VA_ARG_N( _1, _2, _3, _4, _5, _6, _7, _8, _9,_10, _11,_12,_13,_14,_15,_16,_17,_18,_19,_20, _21,_22,_23,_24,_25,_26,_27,_28,_29,_30, _31,_32,_33,_34,_35,_36,_37,_38,_39,_40, _41,_42,_43,_44,_45,_46,_47,_48,_49,_50, _51,_52,_53,_54,_55,_56,_57,_58,_59,_60, _61,_62,_63,N,...) N
+#define __RSEQ_N() 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+
 #ifdef _SIMPLE_HASHMAP_IMPLEMENTATION
 #define _SIMPLE_VECTOR_IMPLEMENTATION
 #endif
 
 #ifndef reallocarray
 #include <assert.h>
+#include <malloc.h>
+#include <sys/types.h>
 void *reallocarray(void *olddata, size_t itemsize, size_t itemcount) {
 	assert((itemsize&itemcount) == 0 || (itemsize * itemcount) / itemsize == itemcount);
 	return realloc(olddata, itemsize * itemcount);
 }
 #endif
+
+
 
 #ifndef vector
 #include <sys/types.h>
@@ -25,7 +35,7 @@ typedef struct {
 
 vector *vec_make(size_t preloc_size, size_t used_size, void *data);
 void vec_free(vector *vec);
-int vec_push(vector *vec, void *data);
+int vec_push(vector *vec, void *data); // -1 on error, index on OK
 int vec_set(vector *vec, void *data, size_t index);
 int vec_size(vector *vec);
 int vec_cap(vector *vec);
@@ -41,10 +51,6 @@ int _vec_sethead(vector *vec, size_t newhead);
 #include <errno.h>
 #include <malloc.h>
 
-//#ifdef reallocarray
-//#undef reallocarray
-//#endif
-
 #include <assert.h>
 
 vector *vec_make(size_t preloc_size, size_t used_size, void *data) {
@@ -56,6 +62,7 @@ vector *vec_make(size_t preloc_size, size_t used_size, void *data) {
 	if (data == NULL) {
 		data = calloc(sizeof(void*), preloc_size);
 	}
+
 	vector *vec = malloc(sizeof(vector));
 	if (vec != NULL) {
 		vec->size = preloc_size;
@@ -82,13 +89,13 @@ int vec_push(vector *vec, void *data) {
 		}
 	}
 	vec->data[vec->head] = data;
-	vec->head++;
-	return 0;
+	return vec->head++;
 }
 
 int vec_size(vector *vec) {
 	return vec->head-1;
 }
+
 int vec_cap(vector *vec) {
 	return vec->size;
 }
@@ -632,33 +639,65 @@ void map_free(hashmap *map) {
 
 #endif // _SIMPLE_HASHMAP_IMPLEMENTATION
 
-#ifndef futex_t
-	#include <stdint.h>
-	typedef uint32_t futex_t;
-#else
-	#ifdef _SIMPLE_MUTEX_IMPLEMENTATION
-		#error "futex_t already defined, _SIMPLE_ can't define it AND utilize default implementation"
-	#endif
-#endif // futex_t
+#ifdef _SIMPLE_ARRAY_IMPLEMENTATION
 
-// i hate this
-#ifdef _SIMPLE_MUTEX_IMPLEMENTATION
-int flock(futex_t *ftx) {
-	// GOD I HATE THIS
-	int _;
-	while (*ftx){
-		// set time to sleep on
-		_++;
-	};
-	*ftx=1;
-	return 0;
-}
-
-#include <assert.h>
-int funlock(futex_t *ftx) {
-	*ftx=0;
-	return 0;
-}
+#ifndef size_t
+#include <sys/types.h>
 #endif
 
+typedef  struct {
+	size_t cap;
+	size_t item_size;
+} array_head;
+
+#define array_get_head(T) (((void*)T)-sizeof(array_head))
+#define array_get_size(T) (array_get_head(T)->cap)
+#define _array_used_bytes(head) (head->item_size*head->cap+sizeof(array_head))
+#define array_used_bytes(T) (_array_used_bytes(array_get_head(T)))
+#define array_free(T) (free(array_get_head(T)))
+
+#define array_make(T, preloc) ((T*)_array_make(sizeof(T), preloc))
+void *_array_make(size_t item_size, size_t preloc) {
+	void *data = malloc(sizeof(array_head)+(item_size*preloc));
+	if (data == NULL) return NULL;
+
+	array_head* head = ((array_head*)data);
+	void *array_data = (data+sizeof(array_head));
+
+	head->cap = preloc;
+	head->item_size = item_size;
+	return array_data;
+}
+
+#define array_resize(T, size) ((__typeof__(T))_array_resize((void*)T, size))
+void *_array_resize(void *data, size_t size) {
+	array_head *head = array_get_head(data);
+	head->cap = size;
+	void *ndata = reallocarray(head, 1, _array_used_bytes(head));
+	if (ndata == NULL) return NULL;
+	return ndata+sizeof(*head);
+}
+
+#define array_minsize(T, size) (__typeof__(T))_array_minsize((void*)T, size)
+void *_array_minsize(void *data, size_t minsize) {
+	array_head *head = array_get_head(data);
+	if (head->cap >= minsize) return data;
+	head->cap = head->cap*2;
+	void *ndata = reallocarray(head, 1, (head->item_size*head->cap)+sizeof(*head));
+	if (ndata == NULL) return NULL;
+	return ndata+sizeof(*head);
+}
+
+#define _fn(T, v, index, fn) (fn( ((T)v), index))
+#define itert_fn(T, index, fn) _fn(__typeof__(*T), T[index], index, fn)
+#define array_forEach(data, fn) do { \
+	array_head *head = array_get_head(data); \
+	for (int i = 0; i<head->cap;i++) { \
+		itert_fn(data, i, fn); \
+	} \
+} while (0)
+
+#endif // _SIMPLE_ARRAY_IMPLEMENTATION
+
 #endif // _SIMPLE_
+
