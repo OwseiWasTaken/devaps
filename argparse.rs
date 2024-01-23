@@ -33,15 +33,16 @@ fn parse_args(args: std::env::Args, requests: &[&str]) -> HashMap<String, Vec<St
 
 fn try_main(args: std::env::Args) -> Result<(), u8> {
 	let mp = parse_args(
-		args, &[
-			"--out",
-			"-l",
-			"-o",
-			"-O3",
-		],
+		args, &[ "--out", "-l", "-o", "-O3" ],
 	);
 
-	println!("{:?}", mp);
+	// check if specified
+	println!("{:?}",mp.get("-O3").is_some());
+
+	for (key, value) in mp {
+		// values = Vec<String>
+		println!("\"{}\" -> {:?}", key, value);
+	}
 
 	Ok(())
 }
