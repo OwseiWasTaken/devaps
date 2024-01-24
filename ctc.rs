@@ -15,9 +15,8 @@ fn ctd(word: String) {
 }
 
 fn main() -> Result<(), String> {
-	let mut args = std::env::args();
-	args.next();
-	for arg in args {
+	let args = std::env::args();
+	for arg in args.skip(1) {
 		if arg.chars().all(|c|c.is_digit(10)||" ,".contains(c)) {
 			let digits = arg
 				.split_terminator(&[' ', ','])
