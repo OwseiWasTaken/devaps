@@ -1,0 +1,32 @@
+`basic char to code from argv`
+`ctc "hello"`
+0
+in``
+out`h:104
+e:101
+l:108
+l:108
+o:111
+`
+err``
+
+`basic char to code from stdin`
+`ctc`
+0
+in`hello`
+out`h:104
+e:101
+l:108
+l:108
+o:111
+`
+err``
+
+`empty ctc`
+`ctc`
+0
+in``
+out``
+err``
+
+
