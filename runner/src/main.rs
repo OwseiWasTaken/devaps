@@ -22,8 +22,15 @@ impl Config {
 	fn append_exec(&mut self, exec: String) { self.exec.push(exec) }
 }
 
-fn read_config(content: &str) -> Result<Vec<Config>, String> {
-	todo!("implement reading the config file")
+fn read_config(content: &str) -> Result<Config, String> {
+	todo!("read_config")
+}
+
+fn read_configs(content: &str) -> Result<Vec<Config>, String> {
+	let scopes = content.split("\n[");
+	scopes.map(read_configs)
+	read_configs
+	todo!("read_configs")
 }
 
 fn main() -> Result<(), String> {
@@ -36,7 +43,7 @@ fn main() -> Result<(), String> {
 
 	let configfile = format!("{home}/.config/runner.cfg");
 	let content = std::fs::read_to_string(configfile).expect("can't read file");
-	let config = read_config(&content);
+	let config = read_configs(&content)?;
 
 	// TODO: parse agrs
 	// --help
