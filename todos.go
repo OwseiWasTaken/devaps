@@ -47,6 +47,7 @@ func HLLine(s string, off, span int) string {
 func ReadAll(filename string) (string, error) {
 	file, err := os.Open(filename)
 	if (err != nil) {return "", err}
+	defer file.Close()
 	cont, err := io.ReadAll(file)
 	if (err != nil) {return "", err}
 	return string(cont), nil
