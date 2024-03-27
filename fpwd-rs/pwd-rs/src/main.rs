@@ -38,7 +38,7 @@ impl Dir {
 
 fn get_config() -> Result<Vec<Edit>, &'static str> {
     let home = std::env::var("HOME").or(Err("Can't read $HOME"))?;
-    let file = std::fs::read_to_string(home.clone()+"/.config/fpwd.lsp");
+    let file = std::fs::read_to_string(home.clone() + "/.config/fpwd.lsp");
     match file {
         Ok(content) => serde_lexpr::from_str(&content).or(Err("Parse error in ~/.config/fpwd.lsp")),
         Err(_) => {
@@ -57,7 +57,7 @@ fn fancy_unwrap<T>(e: Result<T, &'static str>) -> T {
     match e {
         Ok(c) => c,
         Err(reason) => {
-            eprintln!("{reason}");
+            eprintln!("pwd-rs ERROR: {reason}");
             std::process::exit(1)
         }
     }
