@@ -150,11 +150,8 @@ fn read_configs(content: &str) -> Result<Vec<Config>, String> {
 }
 
 fn get_home_dir() -> Result<String, String> {
-	std::env::vars()
-		.filter(|(name, _value)| name == "HOME")
-		.next()
-		.map(|(_name, value)| value)
-		.ok_or("$HOME not defined!".to_owned())
+	std::env::var("HOME")
+		.map_err(|e|format!("can't read $HOME: {e}"))
 }
 
 fn main() -> Result<(), String> {
@@ -195,7 +192,9 @@ fn main() -> Result<(), String> {
 		},
 		Some(file)=>file,
 	};
-	let content = std::fs::read_to_string(&configfile).expect("can't read file");
+	let content = std::fs::read_to_string(&configfile).map_err(|e|{
+		format!("can't read file {configfile}: {e}")
+	})?;
 	let configs = read_configs(&content)?;
 
 	let scope = configs.into_iter()
