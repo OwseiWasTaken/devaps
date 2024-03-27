@@ -17,6 +17,7 @@ fn ctd(word: String, piped: bool) {
 	}
 }
 
+//TODO: read from stdin
 fn main() -> Result<(), String> {
 	let mut args: Vec<String> = std::env::args().skip(1).collect();
 
