@@ -37,11 +37,11 @@ impl Dir {
 }
 
 fn get_config() -> Result<Vec<Edit>, &'static str> {
-    let file = std::fs::read_to_string("~/.config/fpwd");
+    let home = std::env::var("HOME").or(Err("Can't read $HOME"))?;
+    let file = std::fs::read_to_string(home.clone()+"/.config/fpwd.lsp");
     match file {
-        Ok(content) => serde_lexpr::from_str(&content).or(Err("Parse error in ~/.config/fpwd")),
+        Ok(content) => serde_lexpr::from_str(&content).or(Err("Parse error in ~/.config/fpwd.lsp")),
         Err(_) => {
-            let home = std::env::var("HOME").or(Err("Can't read $HOME"))?;
             let tilde = "~".to_owned();
             let color = "\\e[0m".to_owned();
             Ok(vec![Edit {
