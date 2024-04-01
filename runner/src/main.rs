@@ -1,4 +1,43 @@
+impl std::error::Error for RunnerError {}
+impl From<RunnerError> for String {
+    fn from(err: RunnerError) -> String {
+        err.to_string()
+    }
+}
+
+impl std::fmt::Display for RunnerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use RunnerError::*;
+        match self {
+            UnkownSetting { name } => write!(f, "Unknown name \"{}\"", name),
+            EnvSyntaxError { value } => write!(
+                f,
+                "env `{value}` definition must contain space to split name and value"
+            ),
+            SetSyntaxError => write!(f, "Can't read scope setter"),
+            ScopeSyntaxError => write!(f, "non-empty line doens't have '=' to set a variable"),
+            CantFindFindAny => write!(f, "Can't find single findAny file"),
+            PathError(err) => write!(f, "Error searching for path: {err}"),
+            CantSpawnChild { cmd, e } => write!(f, "Can't spawn process `{cmd}`: {e}"),
+            CantExecChild { cmd, e } => write!(f, "Can't execute process `{cmd}`: {e}"),
+            HomeNotDefined=>write!(f, "can't read $HOME"),
+        }
+    }
+}
+
 #[derive(Debug)]
+enum RunnerError {
+    UnkownSetting { name: String },
+    EnvSyntaxError { value: String },
+    SetSyntaxError,
+    ScopeSyntaxError,
+    CantFindFindAny,
+    PathError(String),
+    CantSpawnChild { cmd: String, e: std::io::Error },
+    CantExecChild { cmd: String, e: std::io::Error },
+    HomeNotDefined,
+}
+
 struct Config {
     name: String,
     has: Vec<Vec<String>>,
@@ -18,18 +57,23 @@ impl Config {
         }
     }
 
-    fn get_setting(&mut self, name: &str) -> Result<&mut Vec<String>, String> {
+    fn get_setting(&mut self, name: &str) -> Result<&mut Vec<String>, RunnerError> {
         Ok(match name {
             "findAny" => &mut self.find_any,
             "exec" => &mut self.exec,
-            _ => return Err(format!("Unknown name {name}")),
+            _ => {
+                return Err(RunnerError::UnkownSetting {
+                    name: name.to_owned(),
+                })
+            }
         })
     }
-    fn append(&mut self, name: &str, values: &str) -> Result<(), String> {
+    fn append(&mut self, name: &str, values: &str) -> Result<(), RunnerError> {
         if name == "env" {
-            let (env_name, env_val) = values.split_once(' ').ok_or(format!(
-                "env `{values}` definition must contain space to split name and value"
-            ))?;
+            let (env_name, env_val) =
+                values.split_once(' ').ok_or(RunnerError::EnvSyntaxError {
+                    value: values.to_owned(),
+                })?;
             self.env.push((env_name.to_owned(), env_val.to_owned()));
             return Ok(());
         }
@@ -44,27 +88,26 @@ impl Config {
         Ok(())
     }
 
-    fn find(&self) -> Result<String, String> {
+    fn find(&self) -> Result<String, RunnerError> {
         //self.find_any   // Vec<String>
-        //    .map(.mper) // Iter<Result<Path, String>>
-        //    .filter     // Iter<Result<Path, String>>
-        //    .next       // Option<Result<Path, String>>
-        //    .ok_or      // Result<Result<Path, String>, String>
+        //    .map(.mper) // Iter<Result<Path, RunnerError>>
+        //    .filter     // Iter<Result<Path, RunnerError>>
+        //    .next       // Option<Result<Path, RunnerError>>
+        //    .ok_or      // Result<Result<Path, RunnerError>, RunnerError>
 
         self.find_any
             .iter()
             .try_any_which(|file| {
                 std::path::Path::new(file)
                     .try_exists()
-                    .map_err(|e| e.to_string())
+                    .map_err(|f| f.to_string())
+                    .map_err(RunnerError::PathError)
             })
-            .map(|opt_str|{
-                opt_str.cloned().ok_or("Can't find single findAny file".to_owned())
-            })?
+            .map(|opt_str| opt_str.cloned().ok_or(RunnerError::CantFindFindAny))?
     }
 
     //TODO verify even if findAny doens't work
-    fn verify(&self, verbose: bool) -> Result<bool, String> {
+    fn verify(&self, verbose: bool) -> Result<bool, RunnerError> {
         //TODO print _after_ check
         //println!("{}{{", &self.name);
         for files in &self.has {
@@ -72,7 +115,8 @@ impl Config {
                 for file in files {
                     let exists = std::path::Path::new(&file)
                         .try_exists()
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| e.to_string())
+                        .map_err(RunnerError::PathError)?;
                     if exists {
                         if verbose {
                             //println!("\t\x1b[32m✓ {}\x1b[0m", &file);
@@ -95,7 +139,7 @@ impl Config {
     }
 
     // TODO print command beeing executed
-    fn execute(self) -> Result<(), String> {
+    fn execute(self) -> Result<(), RunnerError> {
         use std::process::Command;
 
         let file = if self.find_any.is_empty() {
@@ -116,9 +160,12 @@ impl Config {
             }
             child
                 .spawn()
-                .map_err(|e| format!("can't spawn {}: {}", cmd, e))?
+                .map_err(|e| RunnerError::CantSpawnChild {
+                    cmd: cmd.clone(),
+                    e,
+                })?
                 .wait()
-                .map_err(|e| format!("can't execute {}: {}", cmd, e))?;
+                .map_err(|e| RunnerError::CantExecChild { cmd, e })?;
         }
 
         Ok(())
@@ -126,11 +173,11 @@ impl Config {
 }
 
 impl std::str::FromStr for Config {
-    type Err = String;
+    type Err = RunnerError;
 
-    fn from_str(content: &str) -> Result<Config, String> {
+    fn from_str(content: &str) -> Result<Config, RunnerError> {
         let mut lines = content.split('\n');
-        let scope = lines.next().ok_or("Can't read scope setter")?;
+        let scope = lines.next().ok_or(RunnerError::ScopeSyntaxError)?;
         let scope = scope[..scope.len() - 1].to_owned();
 
         let mut config = Config::new(scope);
@@ -138,9 +185,7 @@ impl std::str::FromStr for Config {
             if line.is_empty() {
                 continue;
             }
-            let (name, values) = line
-                .split_once('=')
-                .ok_or("non-empty line doens't have '=' to set a variable")?;
+            let (name, values) = line.split_once('=').ok_or(RunnerError::SetSyntaxError)?;
             config.append(name, values)?;
         }
 
@@ -148,23 +193,20 @@ impl std::str::FromStr for Config {
     }
 }
 
-fn read_configs(content: &str) -> Result<Vec<Config>, String> {
+fn read_configs(content: &str) -> Result<Vec<Config>, RunnerError> {
     content
         .split("\n[")
         .filter(|e| !e.is_empty())
         .map(|scope| scope.strip_prefix('[').unwrap_or(scope))
         .map(|scope| scope.parse())
-        .try_fold(
-            Vec::new(),
-            |mut vec: Vec<Config>, may_cfg| {
-                vec.push(may_cfg?);
-                Ok(vec)
-            },
-        )
+        .try_fold(Vec::new(), |mut vec: Vec<Config>, may_cfg| {
+            vec.push(may_cfg?);
+            Ok(vec)
+        })
 }
 
-fn get_home_dir() -> Result<String, String> {
-    std::env::var("HOME").map_err(|e| format!("can't read $HOME: {e}"))
+fn get_home_dir() -> Result<String, RunnerError> {
+    std::env::var("HOME").or(Err(RunnerError::HomeNotDefined))
 }
 
 fn main() -> Result<(), String> {
@@ -224,12 +266,12 @@ fn main() -> Result<(), String> {
 
 fn display_help(progname: Option<String>) -> String {
     format!( "usage $ {}\n\
-		\t[-v | --verify] prints what scope \x1b[3mwould\x1b[0m run\n\
-		\t[-V | -vv | --verbose_verify] prints what scope would run, \x1b[3mand why\x1b[0m\n\
-		\t[-h | --help] prints this\n\
-		\t[-c \x1b[3mconfigfile\x1b[0m | --config \x1b[3mconfigfile\x1b[0m] use \x1b[3mconfigfile\x1b[0m instead of $HOME/.config.runner.cfg",
-		progname.unwrap_or("run".to_owned())
-	)
+        \t[-v | --verify] prints what scope \x1b[3mwould\x1b[0m run\n\
+        \t[-V | -vv | --verbose_verify] prints what scope would run, \x1b[3mand why\x1b[0m\n\
+        \t[-h | --help] prints this\n\
+        \t[-c \x1b[3mconfigfile\x1b[0m | --config \x1b[3mconfigfile\x1b[0m] use \x1b[3mconfigfile\x1b[0m instead of $HOME/.config.runner.cfg",
+        progname.unwrap_or("run".to_owned())
+    )
 }
 
 trait All: IntoIterator {
