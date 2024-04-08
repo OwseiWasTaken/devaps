@@ -19,6 +19,7 @@ fn main() {
 	if out.contains("Changes to be committed"      ) { print!("\x1b[0;31m→"); }
 	if out.contains("Your branch is ahead"         ) { print!("\x1b[5;34m↑"); }
 	if out.contains("behind"                       ) { print!("\x1b[5;91m↓"); }
+	if out.contains("diverged"                     ) { print!("\x1b[5;91m↓\x1b[5;34m↑"); }
 	if out.contains("Changes not staged for commit") { print!("\x1b[0;31m*"); }
 	print!("\x1b[0m");
 }
