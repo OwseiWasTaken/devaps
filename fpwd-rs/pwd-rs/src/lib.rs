@@ -1,30 +1,33 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
-struct Edit {
+pub struct Edit {
     from: String,
     to: String,
     color: Option<String>,
 }
 
 #[derive(Debug)]
-struct Dir {
+pub struct Dir {
     path: String,
     color: Option<String>,
 }
 
+//TODO imple Dir::edit for &mut self
+//so I don't need to clone Edit
+//on every iteration
 impl Dir {
-    fn into_string(self) -> String {
+    pub fn into_string(self) -> String {
         if let Some(color) = self.color {
             color + &self.path
         } else {
             self.path
         }
     }
-    fn new(path: String) -> Dir {
+    pub fn new(path: String) -> Dir {
         Dir { path, color: None }
     }
-    fn edit(self, cfg: Edit) -> Dir {
+    pub fn edit(self, cfg: Edit) -> Dir {
         if let Some(path) = self.path.strip_prefix(&cfg.from) {
             Dir {
                 path: cfg.to + path,
@@ -36,9 +39,10 @@ impl Dir {
     }
 }
 
-fn get_config() -> Result<Vec<Edit>, &'static str> {
+pub fn get_config() -> Result<Vec<Edit>, &'static str> {
     let home = std::env::var("HOME").or(Err("Can't read $HOME"))?;
-    let file = std::fs::read_to_string(home.clone() + "/.config/fpwd.lsp");
+    let filename = std::env::var("FPWDRS_CONFIG").or(Ok(home.clone()+"/.config/fpwd.lsp"))?;
+    let file = std::fs::read_to_string(filename);
     match file {
         Ok(content) => serde_lexpr::from_str(&content).or(Err("Parse error in ~/.config/fpwd.lsp")),
         Err(_) => {
@@ -53,7 +57,7 @@ fn get_config() -> Result<Vec<Edit>, &'static str> {
     }
 }
 
-fn fancy_unwrap<T>(e: Result<T, &'static str>) -> T {
+pub fn fancy_unwrap<T>(e: Result<T, &'static str>) -> T {
     match e {
         Ok(c) => c,
         Err(reason) => {
@@ -63,14 +67,3 @@ fn fancy_unwrap<T>(e: Result<T, &'static str>) -> T {
     }
 }
 
-fn main() {
-    let config = fancy_unwrap(get_config());
-    let pwd = fancy_unwrap(std::env::var("PWD").or(Err("Can't find $PWD env variable")));
-    let dir = Dir::new(pwd);
-    let path = config
-        .into_iter()
-        .fold(dir, Dir::edit)
-        .into_string()
-        .replace("\\e", "\x1b");
-    print!("{path}");
-}

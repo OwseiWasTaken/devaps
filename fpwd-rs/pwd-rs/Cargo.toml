@@ -3,6 +3,15 @@ name = "pwd-rs"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "fpwd-daemon"
+path = "src/daemon/main.rs"
+
+[[bin]]
+name = "pwd-rs"
+path = "src/standalone/main.rs"
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
