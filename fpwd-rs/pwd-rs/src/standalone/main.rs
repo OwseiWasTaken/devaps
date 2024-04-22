@@ -7,7 +7,6 @@ fn main() {
     let path = config
         .into_iter()
         .fold(dir, Dir::edit)
-        .into_string()
-        .replace("\\e", "\x1b");
+        .into_string();
     print!("{path}");
 }
