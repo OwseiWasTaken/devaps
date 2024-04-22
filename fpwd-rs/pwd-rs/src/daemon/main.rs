@@ -2,12 +2,11 @@ use pwd_rs::*;
 use std::io::prelude::*;
 use std::os::unix::net::UnixListener;
 
-fn format_path(path: String, edits: Vec<Edit>) -> String {
+fn format_path(path: String, edits: &[Edit]) -> String {
     edits
-        .into_iter()
-        .fold(Dir::new(path), Dir::edit)
+        .iter()
+        .fold(BDir::new(path), BDir::edit)
         .into_string()
-        .replace("\\e", "\x1b")
 }
 
 fn main() -> std::io::Result<()> {
@@ -23,7 +22,7 @@ fn main() -> std::io::Result<()> {
             Ok((mut socket, _)) => {
                 let mut response = String::new();
                 socket.read_to_string(&mut response)?;
-                socket.write_all(format_path(response, config.clone()).as_bytes())?;
+                socket.write_all(format_path(response, &config).as_bytes())?;
             }
             Err(e) => println!("accept failed: {:?}", e),
         }
