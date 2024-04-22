@@ -1,40 +1,40 @@
-fn get_remote(repo: &git2::Repository) -> git2::Remote {
-    let remote_name = repo
-        .remotes()
-        .unwrap()
-        .into_iter()
-        .flatten()
-        .next()
-        .unwrap()
-        .to_owned();
-    repo.find_remote(&remote_name).unwrap()
-}
+//fn get_remote(repo: &git2::Repository) -> git2::Remote {
+//    let remote_name = repo
+//        .remotes()
+//        .unwrap()
+//        .into_iter()
+//        .flatten()
+//        .next()
+//        .unwrap()
+//        .to_owned();
+//    repo.find_remote(&remote_name).unwrap()
+//}
 
 fn main() {
     let repo = git2::Repository::discover(".").unwrap();
 
     let /*mut*/ push = false; // ↑
                               // only if --fetch flag
-    if false {
-        //TODO maybe should use more precise API
-        // to connect and download from remote
-        // to know if repo is outdated
-        let mut remote = get_remote(&repo);
-        let branches: Vec<_> = repo
-            .branches(None)
-            .unwrap()
-            .map(Result::unwrap)
-            .map(|(branch, _)| branch)
-            .collect();
-        let branches: Vec<_> = branches
-            .iter()
-            .map(git2::Branch::name)
-            .map(Result::unwrap)
-            .map(Option::unwrap)
-            .filter(|a| !a.starts_with("origin")) // TODO use remote.name instead
-            .collect();
-        remote.fetch(&branches, None, None).unwrap()
-    }
+    //if false {
+    //    //TODO maybe should use more precise API
+    //    // to connect and download from remote
+    //    // to know if repo is outdated
+    //    let mut remote = get_remote(&repo);
+    //    let branches: Vec<_> = repo
+    //        .branches(None)
+    //        .unwrap()
+    //        .map(Result::unwrap)
+    //        .map(|(branch, _)| branch)
+    //        .collect();
+    //    let branches: Vec<_> = branches
+    //        .iter()
+    //        .map(git2::Branch::name)
+    //        .map(Result::unwrap)
+    //        .map(Option::unwrap)
+    //        .filter(|a| !a.starts_with("origin")) // TODO use remote.name instead
+    //        .collect();
+    //    remote.fetch(&branches, None, None).unwrap()
+    //}
 
     let statuses = repo.statuses(None).unwrap();
     let statuses_iter = statuses
