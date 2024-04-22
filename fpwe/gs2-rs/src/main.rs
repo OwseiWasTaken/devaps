@@ -80,7 +80,7 @@ fn main() {
     )
     .unwrap();
 
-    print!("\x1b[4;35m{branch}\x1b[0m ");
+    print!("\x1b[1;4;35m{branch}\x1b[0m ");
     if clean    { print!("\x1b[32mÜ") };
     if new      { print!("\x1b[31m+") };
     if staged   { print!("\x1b[31m→") };
