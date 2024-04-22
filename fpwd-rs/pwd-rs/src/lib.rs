@@ -13,16 +13,48 @@ pub struct Dir {
     color: Option<String>,
 }
 
-//TODO imple Dir::edit for &mut self
-//so I don't need to clone Edit
-//on every iteration
+#[derive(Debug)]
+pub struct BDir<'b> {
+    path: String,
+    color: Option<&'b str>,
+}
+
+impl<'b> BDir<'b> {
+    pub fn into_string(self) -> String {
+        if let Some(color) = self.color {
+            color.to_owned() + &self.path
+        } else {
+            self.path
+        }.replace("\\e", "\x1b")
+    }
+    pub fn new(path: String) -> BDir<'b> {
+        BDir {
+            path, color: None,
+        }
+    }
+    pub fn edit(self, cfg: &'b Edit) -> BDir<'b> {
+        if let Some(path) = self.path.strip_prefix(&cfg.from) {
+            let color: Option<&str> = match &cfg.color {
+                Some(col)=>Some(col.as_ref()),
+                None=>self.color,
+            };
+            BDir {
+                path: (cfg.to.clone() + path),
+                color,
+            }
+        } else {
+            self
+        }
+    }
+}
+
 impl Dir {
     pub fn into_string(self) -> String {
         if let Some(color) = self.color {
             color + &self.path
         } else {
             self.path
-        }
+        }.replace("\\e", "\x1b")
     }
     pub fn new(path: String) -> Dir {
         Dir { path, color: None }
@@ -32,6 +64,16 @@ impl Dir {
             Dir {
                 path: cfg.to + path,
                 color: cfg.color.or(self.color),
+            }
+        } else {
+            self
+        }
+    }
+    pub fn borrow_edit(self, cfg: &Edit) -> Dir {
+        if let Some(path) = self.path.strip_prefix(&cfg.from) {
+            Dir {
+                path: cfg.to.clone() + path,
+                color: cfg.color.clone().or(self.color),
             }
         } else {
             self
