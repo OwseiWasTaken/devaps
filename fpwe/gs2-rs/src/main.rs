@@ -1,31 +1,33 @@
-//fn get_remote(repo: &git2::Repository) -> git2::Remote {
+//fn get_remote(repo: &git2::Repository) -> Result<git2::Remote, git2::Error> {
 //    let remote_name = repo
-//        .remotes()
-//        .unwrap()
+//        .remotes()?
 //        .into_iter()
 //        .flatten()
 //        .next()
 //        .unwrap()
 //        .to_owned();
-//    repo.find_remote(&remote_name).unwrap()
+//    repo.find_remote(&remote_name)
 //}
 
-fn main() {
-    let repo = git2::Repository::discover(".").unwrap();
+fn main() -> Result<(), git2::Error> {
+    let repo = match git2::Repository::discover(".") {
+        Ok(repo) => repo,
+        Err(_) => return Ok(()),
+    };
 
     let /*mut*/ push = false; // ↑
-                              // only if --fetch flag
+
+    // only if --fetch flag
+    //TODO should use git graph instead of fetch
     //if false {
-    //    //TODO maybe should use more precise API
-    //    // to connect and download from remote
-    //    // to know if repo is outdated
+    //    //TODO: collect into Result<Vec<_>, git2::Error>
     //    let mut remote = get_remote(&repo);
     //    let branches: Vec<_> = repo
-    //        .branches(None)
-    //        .unwrap()
+    //        .branches(None)?
     //        .map(Result::unwrap)
     //        .map(|(branch, _)| branch)
     //        .collect();
+    //    //TODO: collect into Result<Vec<_>, git2::Error>
     //    let branches: Vec<_> = branches
     //        .iter()
     //        .map(git2::Branch::name)
@@ -36,7 +38,7 @@ fn main() {
     //    remote.fetch(&branches, None, None).unwrap()
     //}
 
-    let statuses = repo.statuses(None).unwrap();
+    let statuses = repo.statuses(None)?;
     let statuses_iter = statuses
         .iter()
         .map(|a| a.status())
@@ -75,20 +77,21 @@ fn main() {
     let clean = !(staged | new | modified | deleted | renamed | push | pull | conflict);
 
     let branch = git2::Reference::normalize_name(
-        repo.head().unwrap().shorthand().unwrap(),
+        repo.head()?.shorthand().unwrap_or("<unknown branch>"),
         git2::ReferenceFormat::ALLOW_ONELEVEL | git2::ReferenceFormat::REFSPEC_SHORTHAND,
-    )
-    .unwrap();
+    )?;
 
-    print!("\x1b[1;4;35m{branch}\x1b[0m ");
-    if clean    { print!("\x1b[32mÜ") };
-    if new      { print!("\x1b[31m+") };
-    if staged   { print!("\x1b[31m→") };
-    if push     { print!("\x1b[5;34m↑") };
-    if pull     { print!("\x1b[7;5;31m↓") };
+    print!(" \x1b[1;4;35m{branch}\x1b[0m ");
+    if clean { print!("\x1b[32mÜ") };
+    if new { print!("\x1b[31m+") };
+    if staged { print!("\x1b[31m→") };
+    if push { print!("\x1b[5;34m↑") };
+    if pull { print!("\x1b[7;5;31m↓") };
     if conflict { print!("\x1b[5;31mx") };
-    if deleted  { print!("\x1b[31m-") };
-    if renamed  { print!("\x1b[34m←") };
+    if deleted { print!("\x1b[31m-") };
+    if renamed { print!("\x1b[34m←") };
     if modified { print!("\x1b[31m*") };
     print!("\x1b[0m");
+
+    Ok(())
 }
