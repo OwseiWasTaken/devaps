@@ -62,7 +62,7 @@ impl<'r> StatusReport<'r> {
         let local_sname = local.shorthand().unwrap();
 
         let remote_name = format!("{}/", self.remote.name().unwrap());
-        let refs: GitResult<_> = self.repo.references()?.into_iter().collect();
+        let refs: GitResult<_> = self.repo.references()?.collect();
         let refs: Vec<_> = refs?;
         let refs: Vec<_> = refs
             .into_iter()
