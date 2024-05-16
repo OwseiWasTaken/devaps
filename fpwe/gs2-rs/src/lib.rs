@@ -44,10 +44,10 @@ impl<'r> StatusReport<'r> {
             modified: false, // *
             deleted: false,  // -
             renamed: false,  // ←
-            conflict: false, // ↨
-            branch,
+            conflict: false, // x
+            branch,          // {name}
+            diverge: false,  // ↕
             remote,
-            diverge: false,
         })
     }
 
