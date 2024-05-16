@@ -23,9 +23,7 @@ pub struct StatusReport<'r> {
     conflict: bool,
     branch: String,
     remote: Remote<'r>,
-    print_graph_count: bool,
-    ahead: Option<usize>,
-    behind: Option<usize>,
+    diverge: bool,
 }
 
 fn get_branch(repo: &Repository) -> GitResult<String> {
@@ -36,12 +34,11 @@ fn get_branch(repo: &Repository) -> GitResult<String> {
 }
 
 impl<'r> StatusReport<'r> {
-    pub fn new(repo: &'r Repository, print_graph_count: bool) -> GitResult<Self> {
+    pub fn new(repo: &'r Repository) -> GitResult<Self> {
         let branch = get_branch(repo)?;
         let remote = get_remote(repo)?;
         Ok(StatusReport {
             repo,
-            print_graph_count,
             staged: false,   // →
             new: false,      // +
             modified: false, // *
@@ -50,27 +47,62 @@ impl<'r> StatusReport<'r> {
             conflict: false, // ↨
             branch,
             remote,
-            ahead: None,
-            behind: None,
+            diverge: false,
         })
     }
 
     pub fn update_graph(&mut self) -> Result<(), GErr> {
-        let (ahead, behind) = self.get_graph()?;
-        self.ahead = Some(ahead);
-        self.behind = Some(behind);
+        self.diverge = self.get_graph()?;
         Ok(())
     }
 
-    pub fn get_graph(&mut self) -> Result<(usize, usize), GErr> {
-        self.remote.connect(Direction::Fetch)?;
-        let local = self.repo.head()?.target().unwrap();
-        let upstream = self.remote.list()?.first().unwrap().oid();
-        self.remote.disconnect()?;
-        self.repo.graph_ahead_behind(local, upstream)
+    pub fn get_graph(&mut self) -> Result<bool, GErr> {
+        let local = self.repo.head()?;
+        let local_target = local.target().unwrap();
+        let local_sname = local.shorthand().unwrap();
+
+        let remote_name = format!("{}/", self.remote.name().unwrap());
+        let refs: GitResult<_> = self.repo.references()?.into_iter().collect();
+        let refs: Vec<_> = refs?;
+        let refs: Vec<_> = refs
+            .into_iter()
+            .map(|refe| {
+                let sname = refe.shorthand().map(String::from);
+                let tar = refe.target();
+                (sname, tar)
+            })
+            .filter(|(sname, tar)| sname.is_some() && tar.is_some())
+            .map(|(sname, tar)| {
+                (
+                    sname.unwrap().strip_prefix(&remote_name).map(String::from),
+                    tar.unwrap(),
+                )
+            })
+            .filter(|(sname, _)| sname.is_some())
+            .map(|(sname, tar)| (sname.unwrap(), tar))
+            .filter(|(sname, _)| sname == local_sname)
+            .map(|(_, tar)| tar )
+            .collect();
+
+        if let Some(target) = refs.first() {
+            if *target == local_target {
+                Ok(false)
+            } else {
+                Ok(true)
+            }
+        } else {
+            Ok(true)
+        }
     }
 
-    pub fn get_statuses(&self) -> Result<Vec<Status>, GErr> {
+    //pub fn remote_graph(&mut self, local: Oid, upstream: Oid) -> GitResult<(usize, usize)> {
+    //    self.remote.connect(Direction::Fetch)?;
+    //    let upstream = self.remote.list()?.first().unwrap().oid();
+    //    self.remote.disconnect()?;
+    //    self.repo.graph_ahead_behind(local, upstream)
+    //}
+
+    pub fn get_statuses(&self) -> GitResult<Vec<Status>> {
         Ok(self
             .repo
             .statuses(None)?
@@ -118,7 +150,7 @@ impl<'r> std::fmt::Display for StatusReport<'r> {
             | self.modified
             | self.deleted
             | self.renamed
-            | self.behind.is_some()
+            | self.diverge
             | self.conflict);
         write!(f, " \x1b[1;4;35m{}\x1b[0m ", self.branch)?;
         if clean {
@@ -142,22 +174,9 @@ impl<'r> std::fmt::Display for StatusReport<'r> {
         if self.modified {
             write!(f, "\x1b[31m*")?
         };
-        if let Some(pull) = self.behind {
-            if pull != 0 {
-                write!(f, "\x1b[7;5;31m↓")?;
-                if self.print_graph_count {
-                    write!(f, "\x1b[0m{pull}")?;
-                }
-            }
-        };
-        if let Some(push) = self.ahead {
-            if push != 0 {
-                write!(f, "\x1b[5;34m↑\x1b[0m")?;
-                if self.print_graph_count {
-                    write!(f, "\x1b[0m{push}")?;
-                }
-            }
-        };
+        if self.diverge {
+            write!(f, "\x1b[7;5;31m↨")?;
+        }
         write!(f, "\x1b[0m")
     }
 }

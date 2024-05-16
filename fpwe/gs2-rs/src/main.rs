@@ -6,18 +6,8 @@ fn main() -> Result<(), git2::Error> {
         Err(_) => return Ok(()),
     };
 
-    let graph: bool = match std::env::var("GS2_GRAPH")
-        .unwrap_or("false".to_owned())
-        .parse()
-    {
-        Ok(b) => b,
-        Err(_) => {
-            eprintln!("$GS2-GRAPH is set but is neither 'true' nor 'false'");
-            std::process::exit(1);
-        }
-    };
     // get branch name, remote
-    let mut status_reporter = StatusReport::new(&repo, graph)?;
+    let mut status_reporter = StatusReport::new(&repo)?;
     // get diffs
     status_reporter.update_statuses()?;
     // get remote graph
