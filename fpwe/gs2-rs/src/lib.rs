@@ -175,7 +175,7 @@ impl<'r> std::fmt::Display for StatusReport<'r> {
             write!(f, "\x1b[31m*")?
         };
         if self.diverge {
-            write!(f, "\x1b[7;5;31m↨")?;
+            write!(f, "\x1b[7;5;31m↕")?;
         }
         write!(f, "\x1b[0m")
     }
