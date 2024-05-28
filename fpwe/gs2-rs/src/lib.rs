@@ -2,15 +2,14 @@ use git2::Error as GErr;
 use git2::*;
 type GitResult<T> = Result<T, GErr>;
 
-fn get_remote(repo: &Repository) -> GitResult<Remote> {
+fn get_remote(repo: &Repository) -> Option<Remote> {
     let remote_name = repo
-        .remotes()?
+        .remotes().ok()?
         .into_iter()
         .flatten()
-        .next()
-        .unwrap()
+        .next()?
         .to_owned();
-    repo.find_remote(&remote_name)
+    repo.find_remote(&remote_name).ok()
 }
 
 pub struct StatusReport<'r> {
@@ -22,7 +21,7 @@ pub struct StatusReport<'r> {
     renamed: bool,
     conflict: bool,
     branch: String,
-    remote: Remote<'r>,
+    remote: Option<Remote<'r>>,
     diverge: bool,
 }
 
@@ -36,7 +35,7 @@ fn get_branch(repo: &Repository) -> GitResult<String> {
 impl<'r> StatusReport<'r> {
     pub fn new(repo: &'r Repository) -> GitResult<Self> {
         let branch = get_branch(repo)?;
-        let remote = get_remote(repo)?;
+        let remote = get_remote(repo);
         Ok(StatusReport {
             repo,
             staged: false,   // →
@@ -57,41 +56,45 @@ impl<'r> StatusReport<'r> {
     }
 
     pub fn get_graph(&mut self) -> Result<bool, GErr> {
-        let local = self.repo.head()?;
-        let local_target = local.target().unwrap();
-        let local_sname = local.shorthand().unwrap();
+        if let Some(remote) = &self.remote {
+            let local = self.repo.head()?;
+            let local_target = local.target().unwrap();
+            let local_sname = local.shorthand().unwrap();
 
-        let remote_name = format!("{}/", self.remote.name().unwrap());
-        let refs: GitResult<_> = self.repo.references()?.collect();
-        let refs: Vec<_> = refs?;
-        let refs: Vec<_> = refs
-            .into_iter()
-            .map(|refe| {
-                let sname = refe.shorthand().map(String::from);
-                let tar = refe.target();
-                (sname, tar)
-            })
-            .filter(|(sname, tar)| sname.is_some() && tar.is_some())
-            .map(|(sname, tar)| {
-                (
-                    sname.unwrap().strip_prefix(&remote_name).map(String::from),
-                    tar.unwrap(),
-                )
-            })
-            .filter(|(sname, _)| sname.is_some())
-            .map(|(sname, tar)| (sname.unwrap(), tar))
-            .filter(|(sname, _)| sname == local_sname)
-            .map(|(_, tar)| tar )
-            .collect();
+            let remote_name = format!("{}/", remote.name().unwrap());
+            let refs: GitResult<_> = self.repo.references()?.collect();
+            let refs: Vec<_> = refs?;
+            let refs: Vec<_> = refs
+                .into_iter()
+                .map(|refe| {
+                    let sname = refe.shorthand().map(String::from);
+                    let tar = refe.target();
+                    (sname, tar)
+                })
+                .filter(|(sname, tar)| sname.is_some() && tar.is_some())
+                .map(|(sname, tar)| {
+                    (
+                        sname.unwrap().strip_prefix(&remote_name).map(String::from),
+                        tar.unwrap(),
+                    )
+                })
+                .filter(|(sname, _)| sname.is_some())
+                .map(|(sname, tar)| (sname.unwrap(), tar))
+                .filter(|(sname, _)| sname == local_sname)
+                .map(|(_, tar)| tar )
+                .collect();
 
-        if let Some(target) = refs.first() {
-            if *target == local_target {
-                Ok(false)
+            if let Some(target) = refs.first() {
+                if *target == local_target {
+                    Ok(false)
+                } else {
+                    Ok(true)
+                }
             } else {
                 Ok(true)
             }
         } else {
-            Ok(true)
+            Ok(false)
         }
     }
 
