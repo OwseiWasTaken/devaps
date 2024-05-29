@@ -8,7 +8,7 @@ TODOs finder in go
 todos.go depends on $HOME/.config/todos
 
 schema for the todo finder is
-[*]string[*] (tab) (regex)
+[\*]string[\*] (tab) (regex)
 the prefix and suffix asteriscs say if the pattern
 can have any string before of after the specified string
 
