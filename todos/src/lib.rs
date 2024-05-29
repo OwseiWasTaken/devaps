@@ -18,10 +18,7 @@ pub struct Entry {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AppData {
-    user: String,
-    folders: HashMap<String, Vec<Entry>>,
-}
+pub struct AppData ( HashMap<String, Vec<Entry>> );
 
 pub fn save_data(file_name: &str, data: &AppData) -> Result<(), TodosError> {
     use std::fs::File;
@@ -38,14 +35,13 @@ pub fn get_file_path() -> Result<String, TodosError> {
 }
 
 pub fn mk_appdata() -> AppData {
-    AppData {
-        user: "manse".to_owned(),
-        folders: HashMap::from([
+    AppData (
+        HashMap::from([
             mk_folder("AAC"),
             mk_folder("Paulista"),
             mk_folder("Timecard"),
         ]),
-    }
+    )
 }
 
 fn mk_folder(name: &str) -> (String, Vec<Entry>) {
@@ -61,3 +57,23 @@ fn mk_entry() -> Entry {
         created: chrono::Local::now(),
     }
 }
+
+impl AppData {
+    pub fn markdown(&self) -> String {
+        let mut out = "".to_owned();
+        for (key, value) in self.0.iter() {
+            out.push_str(&format!("# {key}\n"));
+            for entry in value {
+                out.push_str(&format!("- {}\n", entry.value));
+            }
+            out.push_str("\n");
+        }
+        out
+    }
+    /* html feature
+    pub fn html(&self) -> String {
+    }
+    */
+
+}
+
