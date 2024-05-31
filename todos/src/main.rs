@@ -1,44 +1,52 @@
 use todos::*;
 
 /*
--a is optional
 --file isn't remembered for future executions
---html [with html feature] print html instead of markdown
 list if with no args
 todos
   -f AAC // make folter
   -l AAC // list folter
-  -a AAC "hello" // [0] = hello
-  -a AAC "help" // [1] = help
-  -a AAC "HI" // [2] = HI
-  -d AAC "hellp" // deleted "hello" entry
-  -d AAC // failed to delete non-empty folder
-  -d AAC.help // deleted "help"
-  -dd AAC // force delete folder (still with HI entry)
+  -a AAC "HI" // AAC[1] = {HI}
+  -aa AAC "hello" help"" // AAC[3] = {HI, hello, help}
+  -d AAC "hellp" // deleted "hello" entry // AAC[2] = {HI, help}
+  -df AAC // failed to delete non-empty folder
+  -d AAC help // deleted "help" // AAC[1] = {HI}
+  -Df AAC // force delete folder (had HI entry)
   --file that.toml -f DIR -a DIR "hi!!"
-  --html
+  --scan *.rs // reads files and checks for comments with TODO and writes
+      them as entries in 'files' folder (or dirname folder in case --scan
+      pointed to a directory) and puts file:line:col in meta
 */
 
 /*
 listing (MD)
 # AAC
-- hello
-- help
-- hi
+- hello (RHS)[auto]
+- help (RHS)[auto]
+- hi (RHS)[auto]
 
 # ABC
-- Yo?
-- anyone here?
-- HIIIIII
+- Yo? (RHS)[auto]
+- anyone here? (RHS)[auto]
+- HIIIIII (RHS)[auto]
 */
 
-fn main() -> Result<(), TodosError> {
-    let args: Vec<String> = std::env::args().into_iter().skip(1).collect();
-    println!("{args:?}");
-    //let path = get_file_path()?;
-    let x = mk_appdata();
-    //save_data(&path, &x)?;
-    println!("{}", x.markdown());
+fn main() -> eyre::Result<()> {
+    let x = std::time::SystemTime::now();
+    println!("{x:?}");
+    let path = get_file_path()?;
+    let mut app_data = AppData::from_file(path)?;
+    let cmds: Vec<Command> = cli::arg_parse()?;
+    for cmd in cmds {
+        let user_error = app_data.apply(cmd);
+        if let Err(user_error) = user_error {
+            eprintln!("[WARNING] {user_error}");
+            eprintln!("Halting early because of user error");
+            std::process::exit(1);
+        }
+    }
+    app_data.save()?;
+    println!("{}", app_data.markdown());
 
     Ok(())
 }
