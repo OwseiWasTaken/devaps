@@ -32,8 +32,6 @@ listing (MD)
 */
 
 fn main() -> eyre::Result<()> {
-    let x = std::time::SystemTime::now();
-    println!("{x:?}");
     let path = get_file_path()?;
     let mut app_data = AppData::from_file(path)?;
     let cmds: Vec<Command> = cli::arg_parse()?;

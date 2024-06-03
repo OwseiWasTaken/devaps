@@ -12,6 +12,10 @@ pub enum TodosError {
     #[error(transparent)]
     RegexSyntax(#[from] regex::Error),
 
+    #[error("File missing extension {0}")]
+    NoExt(String),
+    #[error("Missing regex for extension .{0}")]
+    NoExtReg(String),
     #[error("Malformed command, {0} needs more values")]
     MissingArgs(String),
     #[error("Malformed command command previous to '{0}' didn't need this value")]
@@ -22,6 +26,8 @@ pub enum TodosError {
     MissingEnv,
     #[error("Can't find neither $HOME nor $TODOS_RS_SCANCONF env vars for TODOS scanner")]
     MissingEnvConfig,
+    #[error("Can't read scanner config file {0}")]
+    Config(String),
 }
 
 pub fn get_file_path() -> Result<String, TodosError> {
@@ -43,7 +49,7 @@ pub struct Scanner {
 impl Scanner {
     pub fn new() -> Result<Scanner, TodosError> {
         let path = get_conf_file_path()?;
-        let conf = std::fs::read_to_string(path)?;
+        let conf = std::fs::read_to_string(&path).or(Err(TodosError::Config(path)))?;
         let conf: HashMap<String, String> = toml::from_str(&conf)?;
         let mut compiled = HashMap::new();
         for (ext, reg) in conf {
@@ -51,11 +57,26 @@ impl Scanner {
         }
         Ok(Scanner { config: compiled })
     }
-    //pub fn match(&self, )
+    fn get_ext(name: &str) -> Option<&str> {
+        Some(name.rsplit_once(".")?.1)
+    }
+    fn get<'a>(&'a self, ext: &str) -> Option<&'a regex::Regex> {
+        self.config.get(ext)
+    }
+    fn find_all(&self, file_name: &str, content: String) -> Result<Vec<String>, TodosError> {
+        use TodosError::*;
+        let ext = Scanner::get_ext(file_name).ok_or(NoExt(file_name.to_owned()))?;
+        let rgx = self.get(ext).ok_or(NoExtReg(ext.to_owned()))?;
+        Ok(rgx
+            .find_iter(&content)
+            .map(|m| String::from(m.as_str()))
+            .collect())
+    }
 }
 
 #[derive(Debug)]
 pub enum Command {
+    Scan(Vec<String>),
     File(String),
     Folder(String),
     ListFolder(String),
@@ -92,6 +113,8 @@ pub enum TodosWarn {
     FatalError(#[from] TodosError),
     #[error("folder '{0}' not empty, use -Df to force deletion")]
     FolderNotEmpty(String),
+    #[error(transparent)]
+    File(#[from] std::io::Error),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +139,7 @@ impl AppData {
         use Command::*;
         use TodosWarn::*;
         match cmd {
-            File(file_name) => {
+            Command::File(file_name) => {
                 self.save()?; //TODO: check if edits
                 self.data = AppData::read_file(&file_name)?;
                 self.file = file_name;
@@ -164,6 +187,18 @@ impl AppData {
             ForceDeleteFolder(folder) => {
                 self.data.remove(&folder).ok_or(FolderNotFound(folder))?;
             }
+            Scan(files) => {
+                let scanner = Scanner::new()?;
+                let scans = unroll::<_, TodosError>(files
+                    .into_iter()
+                    .map(|file| {
+                        let cont = std::fs::read_to_string(&file)?;
+                        scanner.find_all(&file, cont)
+                    })
+                    .collect());
+                println!("{:?}", scans);
+                todo!()
+            }
             other => {
                 todo!("{:?}", other)
             }
@@ -207,7 +242,9 @@ impl AppData {
 
 pub mod cli {
     use super::*;
+    #[derive(Debug)]
     enum CommandWish<'arg> {
+        Scan,
         File,
         Folder,
         ListFolder,
@@ -237,6 +274,24 @@ pub mod cli {
                 None
             }
         }
+        fn unxt<I>(args: &mut std::iter::Peekable<I>) -> Option<Vec<String>>
+        where
+            I: Iterator<Item = String>,
+        {
+            let mut out = Vec::new();
+            loop {
+                if args.peek().map(|x| x.starts_with('-')).unwrap_or(false) {
+                    return Some(out);
+                } else {
+                    match args.next() {
+                        Some(arg) => out.push(arg),
+                        None => {
+                            return Some(out);
+                        }
+                    }
+                }
+            }
+        }
         fn get(
             self,
             args: &mut std::iter::Peekable<impl Iterator<Item = String>>,
@@ -245,9 +300,12 @@ pub mod cli {
             use Command as Cmd;
             use CommandWish as Wish;
             use CommandWish::*;
-            use TodosError::{ExtraArgs, UnknownCommand};
+            use TodosError::{ExtraArgs, MissingArgs, UnknownCommand};
             let mut t1 = || Wish::nxt(for_cmd, args);
             match self {
+                Scan => Ok(Cmd::Scan(
+                    Wish::unxt(args).ok_or(MissingArgs("--scan".to_owned()))?,
+                )),
                 File => Ok(Cmd::File(t1()?)),
                 Folder => Ok(Cmd::Folder(t1()?)),
                 ListFolder => Ok(Cmd::ListFolder(t1()?)),
@@ -275,6 +333,7 @@ pub mod cli {
 
         while let Some(cmd) = args.next() {
             let wish = match cmd.as_ref() {
+                "--scan" => Wish::Scan,
                 "--file" => Wish::File,
                 "-f" => Wish::Folder,
                 "-l" => Wish::ListFolder,
@@ -291,4 +350,14 @@ pub mod cli {
 
         Ok(out)
     }
+}
+
+fn unroll<T, E>(items: Vec<Result<Vec<T>, E>>) -> Result<Vec<T>, E> {
+    let mut unrolled = Vec::with_capacity(items.len());
+
+    for result in items {
+        unrolled.extend(result?);
+    }
+
+    Ok(unrolled)
 }
