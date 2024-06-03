@@ -40,9 +40,10 @@ fn main() -> eyre::Result<()> {
     for cmd in cmds {
         let user_error = app_data.apply(cmd);
         if let Err(user_error) = user_error {
+            app_data.save()?;
             eprintln!("[WARNING] {user_error}");
             eprintln!("Halting early because of user error");
-            std::process::exit(1);
+            std::process::exit(2);
         }
     }
     app_data.save()?;

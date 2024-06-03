@@ -9,6 +9,8 @@ pub enum TodosError {
     TOMLSER(#[from] toml::ser::Error),
     #[error(transparent)]
     TOMLDE(#[from] toml::de::Error),
+    #[error(transparent)]
+    RegexSyntax(#[from] regex::Error),
 
     #[error("Malformed command, {0} needs more values")]
     MissingArgs(String),
@@ -18,12 +20,38 @@ pub enum TodosError {
     UnknownCommand(String),
     #[error("Can't find neither $HOME nor $TODOS_RS env vars")]
     MissingEnv,
+    #[error("Can't find neither $HOME nor $TODOS_RS_SCANCONF env vars for TODOS scanner")]
+    MissingEnvConfig,
 }
 
 pub fn get_file_path() -> Result<String, TodosError> {
     std::env::var("TODOS_RS")
         .or(std::env::var("HOME").map(|path| path + "/.todos.toml"))
         .or(Err(TodosError::MissingEnv))
+}
+
+pub fn get_conf_file_path() -> Result<String, TodosError> {
+    std::env::var("TODOS_RS_SCANCONF")
+        .or(std::env::var("HOME").map(|path| path + "/.config/.todos_scanner.toml"))
+        .or(Err(TodosError::MissingEnv))
+}
+
+pub struct Scanner {
+    config: HashMap<String, regex::Regex>,
+}
+
+impl Scanner {
+    pub fn new() -> Result<Scanner, TodosError> {
+        let path = get_conf_file_path()?;
+        let conf = std::fs::read_to_string(path)?;
+        let conf: HashMap<String, String> = toml::from_str(&conf)?;
+        let mut compiled = HashMap::new();
+        for (ext, reg) in conf {
+            compiled.insert(ext, regex::Regex::new(&reg)?);
+        }
+        Ok(Scanner { config: compiled })
+    }
+    //pub fn match(&self, )
 }
 
 #[derive(Debug)]
@@ -110,7 +138,10 @@ impl AppData {
                 });
             }
             Delete { folder, value } => {
-                let folder_list = self.data.get_mut(&folder).ok_or(FolderNotFound(folder.clone()))?;
+                let folder_list = self
+                    .data
+                    .get_mut(&folder)
+                    .ok_or(FolderNotFound(folder.clone()))?;
                 let item_pos = folder_list
                     .iter()
                     .position(|entry| entry.value == value)
@@ -133,7 +164,9 @@ impl AppData {
             ForceDeleteFolder(folder) => {
                 self.data.remove(&folder).ok_or(FolderNotFound(folder))?;
             }
-            other=>{todo!("{:?}", other)},
+            other => {
+                todo!("{:?}", other)
+            }
         };
         Ok(())
     }
