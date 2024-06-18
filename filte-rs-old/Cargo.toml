@@ -2,6 +2,11 @@
 name = "filte-rs"
 version = "0.1.0"
 edition = "2021"
+default-run = "filter"
+
+[[bin]]
+name = "filter"
+path = "src/filter.rs"
 
 [dependencies]
 eyre = "0.6.12"
