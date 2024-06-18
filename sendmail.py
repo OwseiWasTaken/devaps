@@ -1,4 +1,5 @@
 from os import environ as os_env
+from sys import stdout
 from datetime import datetime
 from smtplib import SMTP
 
@@ -25,14 +26,15 @@ From: {from_addr}
 To: {to_addr}
 Subject: {subj}
 Date: {date}
+Content-Type: text/html
 
 {message_text}""".encode('ascii', 'xmlcharrefreplace')
 
-#TODO: send email with utf-8
 print(f"[sendmail.py]> sending email from <{CONFIG.SENDER}> to <{CONFIG.TO}>")
 smtp = SMTP()
 smtp.connect(CONFIG.SERVER, CONFIG.SERVER_PORT)
+#smtp.starttls()
 smtp.login(CONFIG.SENDER, CONFIG.PASSWORD)
 smtp.sendmail(from_addr, [to_addr], msg)
-print(f"[sendmail.py]> email sent")
+print("[sendmail.py]> email sent")
 smtp.quit()
