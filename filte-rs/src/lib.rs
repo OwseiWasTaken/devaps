@@ -7,18 +7,15 @@ pub enum FilteError {
 
     #[error("No such filter mode {0}'")]
     NoFilter(char),
-    
-    #[error("Missing mode/filter division from '{0}'")]
+
+    #[error("Missing mode/pattern division from '{0}'")]
     MissingDiv(String),
-    
+
     #[error("Missing mode text")]
-    MissingMod(String),
-    
-    #[error("Missing filter text")]
-    MissingPattern(String),
-    
-    #[error("No text in filter")]
-    NoText,
+    MissingMod,
+
+    #[error("Missing pattern text")]
+    MissingPattern,
 }
 use FilteError::*;
 
@@ -43,14 +40,43 @@ impl TryFrom<String> for Transformer {
         let (mode, pattern) = tx
             .split_once("/")
             .ok_or(MissingDiv(tx.to_owned()))?;
+        let pattern = pattern.to_owned();
         let mut modes = mode.chars().rev();
-        let mode = modes.next();
+        let mode = modes.next().ok_or(MissingMod)?;
         let extra = modes.next();
-        let invert = extra == Some('i');
-        match mode {
+        let mut invert = extra == Some('i');
+        let filter = match mode {
             '='=>Is(pattern),
-            's'=>Includes(pattern),
+            'i'|'+'=>Includes(pattern),
+            'e'|'-'=>{
+                invert = !invert;
+                Includes(pattern)
+            },
+            '.'|'r'=>Regex(pattern.try_into()?),
+            '?'|'g'=>Glob(glob::Pattern::new(&pattern)?),
+            other=>Err(NoFilter(other))?,
+        };
+        Ok(Transformer{
+            filter,
+            invert,
+        })
+    }
+}
+
+impl Filter {
+    fn compare(&self, text: &str) -> bool {
+        use Filter::*;
+        match self {
+            Is(rf)=>rf==text,
+            Includes(rf)=>text.contains(rf),
+            Regex(rf)=>rf.is_match(text),
+            Glob(rf)=>rf.matches(text),
         }
-        todo!()
+    }
+}
+
+impl Transformer {
+    pub fn compare(&self, text: &str) -> bool {
+        self.filter.compare(text) != self.invert
     }
 }
