@@ -8,14 +8,11 @@ pub enum FilteError {
     #[error("No such filter mode {0}'")]
     NoFilter(char),
 
-    #[error("Missing mode/pattern division from '{0}'")]
-    MissingDiv(String),
+    #[error("Missing text")]
+    MissingText,
 
-    #[error("Missing mode text")]
-    MissingMod,
-
-    #[error("Missing pattern text")]
-    MissingPattern,
+    #[error("Missing mode")]
+    MissingMode,
 }
 use FilteError::*;
 
@@ -37,17 +34,16 @@ impl TryFrom<String> for Transformer {
     type Error = FilteError;
     fn try_from(tx: String) -> Result<Transformer, FilteError> {
         use Filter::*;
-        let (mode, pattern) = tx
-            .split_once("/")
-            .ok_or(MissingDiv(tx.to_owned()))?;
-        let pattern = pattern.to_owned();
-        let mut modes = mode.chars().rev();
-        let mode = modes.next().ok_or(MissingMod)?;
-        let extra = modes.next();
-        let mut invert = extra == Some('i');
+        let mut chars = tx.chars();
+        let mut mode = chars.next().ok_or(MissingText)?;
+        let mut invert = mode == 'i';
+        if mode == 'i' {
+            mode = chars.next().ok_or(MissingMode)?;
+        }
+        let pattern:String = chars.collect();
         let filter = match mode {
             '='=>Is(pattern),
-            'i'|'+'=>Includes(pattern),
+            'h'|'+'=>Includes(pattern),
             'e'|'-'=>{
                 invert = !invert;
                 Includes(pattern)

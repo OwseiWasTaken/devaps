@@ -1,22 +1,20 @@
 use filte_rs::*;
 use std::io::{stdin, BufRead};
 
-//TODO: make filte-rs but with no / div
-
 fn match_all(xs: &[Transformer], text: &str) -> bool {
     xs.iter().all(|t|t.compare(text))
 }
 
 const HELP: &'static str = "
-usage filter [i]mode/pattern
+usage filter [i](mode)(pattern)
 
 excludes lines that don't fit the patterns with speficied modes
 
 if 'i' is the prefix of a mode the filter will exclude lines the *do* fit the pattern
 
 modes:
-  = : equals
-+|i : includes
+=   : equals
++|h : includes
 -|e : excludes (shorthand for i+)
 .|r : regex
 ?|g : glob
