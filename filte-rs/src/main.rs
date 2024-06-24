@@ -13,11 +13,13 @@ excludes lines that don't fit the patterns with speficied modes
 if 'i' is the prefix of a mode the filter will exclude lines the *do* fit the pattern
 
 modes:
-=   : equals
-+|h : includes
--|e : excludes (shorthand for i+)
-.|r : regex
-?|g : glob
+=   : equals $pattern
+^|s : starts with $pattern
+$|z : ends with $pattern
++|h : includes $pattern
+-|e : excludes $pattern (shorthand for i+)
+.|r : matches regex $pattern
+?|g : matches glob $pattern
 
 the only way to print this text is to execute with no arguments
 ";
