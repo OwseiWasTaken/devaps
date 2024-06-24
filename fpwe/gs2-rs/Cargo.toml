@@ -7,3 +7,9 @@ edition = "2021"
 
 [dependencies]
 git2 = { version = "0.18.3", default-features = false, features = ["https"] }
+
+[profile.release]
+opt-level = "s"  # Optimize for size.
+strip = true  # Automatically strip symbols from the binary.
+panic = "abort"
+lto = true
